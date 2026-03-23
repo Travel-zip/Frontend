@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+/* 폰트 파일들 등록 */
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Regular.subset.woff2") format("woff2");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Medium.subset.woff2") format("woff2");
+  font-weight: 500;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-SemiBold.subset.woff2") format("woff2");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Bold.subset.woff2") format("woff2");
+  font-weight: 700;
+}
+
+@theme {
+  /* 메인 컬러 */
+  --color-primary-100: #e5eaff;
+  --color-primary-200: #ced7ff;
+  --color-primary-300: #a3b4ff;
+  --color-primary-400: #8ca2ff;
+  --color-primary-500: #6f8aff;
+  --color-primary-600: #4967fe;
+  --color-primary-700: #2c4fff;
+  --color-primary-800: #1a40ff;
+
+  /* Grayscale */
+  --color-gray-50: #fefefe;
+  --color-gray-100: #f6f6fc;
+  --color-gray-200: #e0e0eb;
+  --color-gray-300: #bcbcce;
+  --color-gray-400: #7d7d8e;
+  --color-gray-500: #7d7d8e;
+  --color-gray-600: #5b5b67;
+  --color-gray-700: #4a4a54;
+  --color-gray-800: #383840;
+  --color-gray-900: #222222;
+
+  /* Static Color */
+  --color-error-default: #ff1a66;
+  --color-error-bgd: #ffe8f0;
+
+  --color-success-default: #0f9e5c;
+  --color-success-bgd: #d2ffd7;
+  --font-pretendard: "Pretendard", system-ui, sans-serif;
+}
+
+/* Title 시리즈 */
+@utility text-title1 {
+  font-size: 36px;
+  line-height: 1.2; /* LINE 20 */
+  font-weight: 700; /* Bold */
+  letter-spacing: -0.02em; /* LETTER 2% */
+}
+@utility text-title2 {
+  font-size: 30px;
+  line-height: 1.4;
+  font-weight: 600; /* Semibold */
+  letter-spacing: -0.02em;
+}
+@utility text-title3 {
+  font-size: 30px;
+  line-height: 1.5;
+  font-weight: 500; /* Medium */
+  letter-spacing: -0.02em;
+}
+
+/* Heading 시리즈 */
+@utility text-h1 {
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+@utility text-h2 {
+  font-size: 24px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+@utility text-h3 {
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+@utility text-h4 {
+  font-size: 24px;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+@utility text-h5 {
+  font-size: 24px;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+@utility text-h6 {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+/* Body 시리즈 */
+@utility text-body1 {
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility text-body2 {
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+@utility text-body3 {
+  font-size: 16px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+@utility text-body4 {
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+@utility text-body5 {
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* Caption */
+@utility text-caption {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+/* 디자이너가 정한 메인 그리드 컨테이너 */
+@utility grid-main {
+  display: grid;
+  grid-template-columns: repeat(8, 180px);
+  gap: 240px;
+  justify-content: start;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-pretendard);
+  }
+}
