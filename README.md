@@ -1,73 +1,108 @@
-# React + TypeScript + Vite
+# ✈️ 여행.zip (Travel.zip) | 실시간 그룹 협업 여행 플래너
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+그룹 여행 준비의 비효율과 갈등을 해소하고, 실시간 협업, 자동화, 민주적 의사결정을 결합한 통합 플랫폼
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌟 프로젝트 비전: 그룹 여행의 새로운 표준 제시
 
-## React Compiler
+기존의 채팅방, 이메일, 개별 앱으로는 해결하기 어려웠던 그룹 여행 준비의 구조적 문제를 혁신적으로 개선합니다. Figma와 같은 협업 도구의 직관적인 UX를 여행 계획에 적용하여, 참여자 모두의 만족도를 극대화하는 새로운 표준을 제시합니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 1. 문제 정의 (Why Now?)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+그룹 여행 계획은 현대인에게 큰 스트레스 요인입니다. 특히 한국인의 경우 계획에 20시간 이상을 투자하는 비율이 글로벌 평균의 2배에 달합니다.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| 문제 유형         | 상세 내용                                                 | 해결 방안 (여행.zip)                  |
+| ----------------- | --------------------------------------------------------- | ------------------------------------- |
+| **소통 비효율**   | 채팅/이메일로 인한 일정 조율의 어려움, 의견 실시간 미반영 | 실시간 커서/채팅/음성 지원 협업 기능  |
+| **정보 분산**     | 숙소, 교통, 명소 정보가 여러 앱과 문서로 흩어짐           | 통합된 타임라인/지도 뷰 시각화        |
+| **갈등 및 불만**  | 예산 분담의 투명성 부족, 소수 의견 무시                   | 민주적 투표 시스템 및 예산 관리 기능  |
+| **비효율적 동선** | 이동 시간/거리 고려 부족으로 인한 비효율                  | AI 기반 최적 동선 자동 생성 및 시각화 |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 2. 핵심 기능 (Core Features)
+
+사용자가 가장 직관적이고 즐겁게 여행 계획을 짤 수 있도록, 실시간 상호작용과 시각화에 중점을 둔 UI/UX를 설계했습니다.
+
+| 기능 영역              | 주요 구현 내용 (FE Focus)                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **실시간 협업 환경**   | 여러 명이 동시에 일정 수정, 실시간 커서 및 변경 사항 동기화 UI 구현, 웹 기반 음성/텍스트 채팅 인터페이스      |
+| **AI 일정 시각화**     | AI가 생성한 일정을 타임라인(Timeline) 및 지도(Map) 뷰로 전환하여 보여주는 컴포넌트 개발                       |
+| **민주적 의사결정**    | 장소/숙소별 투표 기능, 실시간 투표 현황을 막대 그래프 등으로 시각화하는 컴포넌트, 코멘트 및 찬반 의견 입력 UI |
+| **한국 특화 데이터**   | 국내 지역 정보, 대중교통 동선 등 한국 사용자에게 최적화된 지도 및 UI 컴포넌트 설계                            |
+| **통합 관리 대시보드** | 일정, 예산 계획(항목별 분담/정산), 여행 준비물 체크리스트를 한눈에 볼 수 있는 반응형 대시보드                 |
+
+---
+
+## 3. 기술 스택 (Frontend Stack)
+
+여행.zip의 프론트엔드는 높은 생산성, 안정적인 코드 베이스, 그리고 복잡한 상태 관리 및 실시간 동기화 처리에 최적화된 스택으로 구성됩니다.
+
+| 분류               | 기술 스택                            | 설명                                                                                      |
+| ------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| **프레임워크**     | React                                | UI 컴포넌트 기반 개발 및 빠른 렌더링을 위한 핵심 라이브러리                               |
+| **언어**           | TypeScript                           | 정적 타입 검사를 통한 코드 안정성 확보, API 통신 및 대규모 프로젝트 유지보수성 향상       |
+| **스타일링**       | CSS                                  | 반응형(Responsive) 및 적응형(Adaptive) 디자인 구현으로 모든 디바이스에 최적화된 경험 제공 |
+| **협업/상태 관리** | React Hooks & Context API/Zustand 등 | 실시간 협업 데이터(커서 위치, 일정 변경 등)의 효율적 관리 및 전역 상태 동기화             |
+| **디자인 툴**      | Figma, Illustrator                   | 전반적인 UI/UX 설계 및 서비스 로고 제작                                                   |
+
+---
+
+## 4. Git 협업 워크플로우 (Git Workflow)
+
+우리 프로젝트는 안정적인 개발 및 배포 관리를 위해 **Git Flow** 전략을 사용합니다. 모든 작업은 **Pull Request(PR)**를 통해 병합되어야 하며, 코드 리뷰를 필수로 거칩니다.
+
+### 4.1. 주요 브랜치
+
+| 브랜치    | 역할                                                             | 보호 설정               |
+| --------- | ---------------------------------------------------------------- | ----------------------- |
+| `main`    | 제품 출시(Production) 가능한 안정적인 코드. 절대 직접 커밋 금지. | PR을 통해서만 병합 허용 |
+| `develop` | 다음 출시 버전을 위한 통합 개발 브랜치. 모든 기능 병합의 중심지. | PR을 통해서만 병합 허용 |
+
+### 4.2. 보조 브랜치
+
+| 브랜치 접두사 | 목적                                    | 생성 기준                 | 병합 대상                       |
+| ------------- | --------------------------------------- | ------------------------- | ------------------------------- |
+| `feature/`    | 새로운 기능 개발                        | `develop` 브랜치에서 분기 | `develop` 브랜치로 PR           |
+| `release/`    | 배포 준비 및 버그 수정                  | `develop` 브랜치에서 분기 | `main` 및 `develop` 브랜치로 PR |
+| `hotfix/`     | `main` 브랜치의 치명적인 버그 긴급 수정 | `main` 브랜치에서 분기    | `main` 및 `develop` 브랜치로 PR |
+
+### 4.3. 개발 프로세스 (Feature Development)
+
+#### 1. 브랜치 생성
+
+`develop` 브랜치에서 작업할 기능 브랜치를 생성합니다.
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/FEAT-001_login-ui
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+#### 2. 커밋
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+작업 단위별로 명확한 커밋 메시지를 사용합니다.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# 예: feat(login): 로그인 폼 UI 구현
+git commit -m "feat(login): 로그인 폼 UI 구현"
 ```
+
+#### 3. PR 요청
+
+기능 개발 완료 후, `feature/` 브랜치를 `develop` 브랜치로 병합하기 위한 PR을 생성합니다. (PR 템플릿 사용 권장)
+
+#### 4. 코드 리뷰
+
+리뷰어 승인 후 병합을 진행합니다.
+
+---
+
+## 🚀 함께 만들어갈 그룹 여행의 혁신, 지금 바로 시작하세요
+
+---
+
+© 2025 여행.zip (Travel.zip) - All rights reserved.
