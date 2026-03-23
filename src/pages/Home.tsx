@@ -7,7 +7,7 @@ import { type PlanData } from "../components/common/PlanCard";
 export default function Home() {
   const [plans, setPlans] = useState<PlanData[]>([]);
 
-  // ✅ 로컬 스토리지에서 아이디 가져오기
+  //로컬 스토리지에서 아이디 가져오기
   const userLoginId = localStorage.getItem("loginId") || "글미";
 
   const addPlan = () => {
@@ -31,7 +31,7 @@ export default function Home() {
     <div className="flex w-screen h-screen bg-gray-50 overflow-hidden font-pretendard">
       <Sidebar
         rooms={plans}
-        userName={userLoginId} // ✅ 아이디 반영
+        userName={userLoginId}
         onCreatePlan={addPlan}
         onExit={handleLogout}
       />

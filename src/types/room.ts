@@ -7,7 +7,7 @@ export type Member = {
 };
 
 /**
- * 2-4) 방 상세 정보 (리스트 및 아카이브용)
+ *방 상세 정보 (리스트 및 아카이브용)
  */
 export type Room = {
   roomId: string;
@@ -20,14 +20,14 @@ export type Room = {
 };
 
 /**
- * 2-1) 방 생성 요청
+ *방 생성 요청
  */
 export type CreateRoomRequest = {
   roomId: string;
 };
 
 /**
- * 2-5) 즐겨찾기 토글 응답
+ *즐겨찾기 토글 응답
  */
 export type FavoriteResponse = {
   roomId: string;

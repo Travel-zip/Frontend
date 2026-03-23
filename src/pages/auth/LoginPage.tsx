@@ -13,7 +13,6 @@ export default function LoginPage() {
     try {
       const res = await authApi.login({ loginId, password });
 
-      // ✅ 토큰과 로그인 아이디를 함께 저장
       localStorage.setItem("accessToken", res.data.accessToken);
       localStorage.setItem("loginId", loginId);
 

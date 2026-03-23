@@ -23,7 +23,7 @@ export default function MapPage() {
   const [selectedPlaces, setSelectedPlaces] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  // 1. 방 목록 로드 (생략 동일)
+  //방 목록 로드
   useEffect(() => {
     roomApi.getMyRooms().then((res) => {
       setRooms(res.data.rooms);
@@ -31,7 +31,7 @@ export default function MapPage() {
     });
   }, []);
 
-  // 2. 지도 초기화 (생략 동일)
+  //지도 초기화
   useEffect(() => {
     const { kakao } = window as any;
     if (!kakao) return;
@@ -50,7 +50,7 @@ export default function MapPage() {
     });
   }, []);
 
-  // 3-1. 키워드 검색 (Search)
+  //키워드 검색 (Search)
   const handleKeywordSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!keyword.trim() || !mapInstance.current) return;
@@ -72,7 +72,7 @@ export default function MapPage() {
     }
   };
 
-  // ✅ 3-2. 주변 장소 조회 (Nearby) - 버튼 클릭 시 호출
+  //주변 장소 조회 (Nearby) - 버튼 클릭 시 호출
   const handleNearbySearch = async (categoryCSV: string) => {
     if (!mapInstance.current) return;
 
@@ -98,7 +98,7 @@ export default function MapPage() {
     }
   };
 
-  // ✅ 통합 마커 표시 로직 (SearchPlace와 NearbyPlace 필드 차이 대응)
+  //통합 마커 표시 로직 (SearchPlace와 NearbyPlace 필드 차이 대응)
   const displayMarkers = (places: any[]) => {
     const { kakao } = window as any;
     clustererInstance.current.clear();
@@ -168,7 +168,7 @@ export default function MapPage() {
             </button>
           </form>
 
-          {/* ✅ 주변 장소 카테고리 버튼들 (공통 Button 컴포넌트 활용) */}
+          {/*주변 장소 카테고리 버튼들 (공통 Button 컴포넌트 활용) */}
           <div className="flex gap-2">
             <Button
               label="🍔 식당"
@@ -182,7 +182,7 @@ export default function MapPage() {
               variant="outline"
               customSize="px-6 py-2 w-auto"
               textClassName="text-body4"
-              onClick={() => handleNearbySearch("food,culture")} // 맛집은 음식+문화를 섞어봄
+              onClick={() => handleNearbySearch("food,culture")} // 맛집은 음식+문화
             />
             <Button
               label="🎡 놀거리"

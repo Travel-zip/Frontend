@@ -9,14 +9,14 @@ export type UserProfile = {
 };
 
 /**
- * 1-1) 이메일 인증코드 발송 요청
+ *이메일 인증코드 발송 요청
  */
 export type EmailSendRequest = {
   email: string;
 };
 
 /**
- * 1-2) 이메일 인증코드 확인 요청
+ *이메일 인증코드 확인 요청
  */
 export type EmailVerifyRequest = {
   email: string;
@@ -24,7 +24,7 @@ export type EmailVerifyRequest = {
 };
 
 /**
- * 1-3) 회원가입 요청
+ *회원가입 요청
  */
 export type SignupRequest = {
   loginId: string;
@@ -33,7 +33,7 @@ export type SignupRequest = {
 };
 
 /**
- * 1-4) 로그인 요청
+ *로그인 요청
  */
 export type LoginRequest = {
   loginId: string;

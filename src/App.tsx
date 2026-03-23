@@ -10,13 +10,13 @@ export default function App() {
 
   return (
     <Routes>
-      {/* 1. 홈: 로그인 시 진입, 아니면 로그인창으로 */}
+      {/*홈: 로그인 시 진입, 아니면 로그인창으로 */}
       <Route
         path="/"
         element={isAuthenticated ? <Home /> : <Navigate to="/login" replace />}
       />
 
-      {/* 2. 지도: 로그인 시 진입 */}
+      {/*지도: 로그인 시 진입 */}
       <Route
         path="/map"
         element={
@@ -24,14 +24,14 @@ export default function App() {
         }
       />
 
-      {/* 3. 로그인/회원가입: 로그인 상태면 홈으로 튕겨냄 */}
+      {/*로그인/회원가입: 로그인 상태면 홈으로 튕겨냄 */}
       <Route
         path="/login"
         element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" replace />}
       />
       <Route path="/signup" element={<SignupPage />} />
 
-      {/* 4. 기타 경로는 홈으로 */}
+      {/*기타 경로는 홈으로 */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

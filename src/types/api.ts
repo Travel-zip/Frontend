@@ -34,7 +34,7 @@ export type SearchParams = {
   lat: number;
   lng: number;
   radius: number; // 50~2500
-  roomId?: string; // 무조건 쓰는 것을 권장(명세서 참고)
+  roomId?: string;
 };
 
 export type SearchPlace = {

@@ -6,7 +6,7 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {/* 2. App 전체를 BrowserRouter로 감싸기 */}
+    {/*App 전체를 BrowserRouter로 감싸기 */}
     <BrowserRouter>
       <App />
     </BrowserRouter>
