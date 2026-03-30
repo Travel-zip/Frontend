@@ -10,7 +10,7 @@ import axios, {
  */
 const client: AxiosInstance = axios.create({
   // 백엔드 서버 주소 (배포 후에는 AWS 주소 등으로 교체 필수)
-  baseURL: "http://tavel.zip.p-e.kr",
+  baseURL: "https://tavel.zip.p-e.kr",
   headers: {
     "Content-Type": "application/json",
   },

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/common/Button";
 import { authApi } from "../../api/authApi";
+import Button from "../../components/common/Button";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
@@ -12,28 +12,29 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const res = await authApi.login({ loginId, password });
+      const { accessToken, user } = res.data; // 서버 응답 구조 분해
 
-      localStorage.setItem("accessToken", res.data.accessToken);
-      localStorage.setItem("loginId", loginId);
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("loginId", user.loginId); // 서버가 준 아이디 저장
 
-      alert("반갑습니다, " + loginId + "님!");
+      alert(`반갑습니다, ${user.loginId}님!`);
       navigate("/");
-      window.location.reload(); // 인증 상태 갱신
+      window.location.reload();
     } catch (err: any) {
-      alert(err.response?.data?.message || "로그인 정보를 확인해주세요.");
+      alert(err.response?.data?.message || "로그인 실패");
     }
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col p-8 pt-32 max-w-[480px] mx-auto">
-      <div className="mb-14 text-title1 text-gray-900 leading-tight">
+      <h1 className="text-title1 mb-14">
         여행의 시작,
         <br />
-        로그인부터 해볼까요?
-      </div>
+        로그인부터!
+      </h1>
       <form onSubmit={handleLogin} className="flex flex-col gap-6">
         <input
-          className="w-full p-4 rounded-[10px] border-2 border-gray-200 bg-gray-50 outline-none focus:border-primary-600 text-body3"
+          className="w-full p-4 rounded-[10px] border-2 border-gray-200"
           placeholder="아이디"
           value={loginId}
           onChange={(e) => setLoginId(e.target.value)}
@@ -41,7 +42,7 @@ export default function LoginPage() {
         />
         <input
           type="password"
-          className="w-full p-4 rounded-[10px] border-2 border-gray-200 bg-gray-50 outline-none focus:border-primary-600 text-body3"
+          className="w-full p-4 rounded-[10px] border-2 border-gray-200"
           placeholder="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -53,15 +54,13 @@ export default function LoginPage() {
             variant="solid"
             type="submit"
             customSize="w-full py-5"
-            textClassName="text-body1"
           />
           <Button
             label="회원가입"
             variant="outline"
             type="button"
-            onClick={() => navigate("/signup")}
+            onClick={() => navigate("/email-send")}
             customSize="w-full py-5"
-            textClassName="text-body1"
           />
         </div>
       </form>
