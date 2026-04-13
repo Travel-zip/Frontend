@@ -59,7 +59,7 @@ export default function LoginPage() {
             label="회원가입"
             variant="outline"
             type="button"
-            onClick={() => navigate("/email-send")}
+            onClick={() => navigate("/signup")}
             customSize="w-full py-5"
           />
         </div>

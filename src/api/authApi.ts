@@ -1,4 +1,5 @@
-import client from "./client";
+import client, { IS_MOCK } from "./client";
+import { MOCK_DATA } from "./mockData";
 import type {
   EmailSendRequest,
   EmailVerifyRequest,
@@ -9,23 +10,31 @@ import type {
 import type { AxiosResponse } from "axios";
 
 export const authApi = {
-  // 1. 이메일 인증코드 발송
   sendCode: (data: EmailSendRequest) =>
-    client.post("/api/auth/email/send-code", data),
+    IS_MOCK
+      ? Promise.resolve(MOCK_DATA.auth.success)
+      : client.post("/api/auth/email/send-code", data),
 
-  // 2. 이메일 인증코드 확인
   verifyCode: (data: EmailVerifyRequest) =>
-    client.post("/api/auth/email/verify-code", data),
+    IS_MOCK
+      ? Promise.resolve(MOCK_DATA.auth.success)
+      : client.post("/api/auth/email/verify-code", data),
 
-  // 3. 회원가입
-  signup: (data: SignupRequest) => client.post("/api/auth/signup", data),
+  signup: (data: SignupRequest) =>
+    IS_MOCK
+      ? Promise.resolve(MOCK_DATA.auth.success)
+      : client.post("/api/auth/signup", data),
 
-  // 4. 로그인 (응답 타입 적용)
-  login: (data: LoginRequest): Promise<AxiosResponse<LoginResponse>> =>
-    client.post("/api/auth/login", data),
+  login: (data: LoginRequest): Promise<AxiosResponse<LoginResponse>> => {
+    if (IS_MOCK) {
+      console.log("🚀 [Mock Mode] 로그인 시도:", data);
+      return Promise.resolve(MOCK_DATA.auth.login as any);
+    }
+    return client.post("/api/auth/login", data);
+  },
 
   logout: () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("loginId");
+    localStorage.clear();
+    window.location.href = "/login";
   },
 };

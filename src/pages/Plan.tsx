@@ -8,7 +8,11 @@ interface PlanProps {
   imageSrc?: string;
   plans: PlanData[];
   onAddPlan: () => void;
-  onToggleFavorite: (id: number) => void;
+  onToggleFavorite: (id: number | string) => void; //id 타입 대응 (number | string)
+  // Home에서 내려주는 새로운 기능들을 인터페이스에 추가
+  onRename: (id: number | string, newTitle: string) => void;
+  onDelete: (id: number | string) => void;
+  onCopyLink: (id: number | string) => void;
 }
 
 const Plan: React.FC<PlanProps> = ({
@@ -16,6 +20,9 @@ const Plan: React.FC<PlanProps> = ({
   plans,
   onAddPlan,
   onToggleFavorite,
+  onRename,
+  onDelete,
+  onCopyLink,
 }) => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
@@ -37,6 +44,7 @@ const Plan: React.FC<PlanProps> = ({
               <img
                 src={imageSrc}
                 className="w-full h-full object-cover opacity-50"
+                alt="empty background"
               />
             )}
             <div className="absolute z-10 text-title2 text-center pointer-events-none">
@@ -49,16 +57,20 @@ const Plan: React.FC<PlanProps> = ({
         <div className="w-full h-full overflow-y-auto pr-10 pb-40 scrollbar-hide">
           <div
             className="
-        grid gap-4 animate-fadeIn
-        grid-cols-[repeat(auto-fill,376px)] 
-        justify-start
-      "
+            grid gap-4 animate-fadeIn
+            grid-cols-[repeat(auto-fill,376px)] 
+            justify-start
+          "
           >
             {plans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 data={plan}
                 onToggleFavorite={onToggleFavorite}
+                // PlanCard가 필요한 새로운 props들도 전달
+                onRename={onRename}
+                onDelete={onDelete}
+                onCopyLink={onCopyLink}
               />
             ))}
           </div>

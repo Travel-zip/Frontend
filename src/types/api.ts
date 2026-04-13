@@ -16,9 +16,9 @@ export type Room = {
   members: Member[];
 };
 
-export type CreateRoomRequest = {
+export interface CreateRoomRequest {
   roomId: string;
-};
+}
 
 export type FavoriteResponse = {
   roomId: string;
@@ -29,7 +29,7 @@ export type FavoriteResponse = {
  * 검색(Search) 관련 타입
  */
 export type SearchParams = {
-  category: string; // "attraction", "food" 등 또는 contentTypeId
+  category?: string; // "attraction", "food" 등 또는 contentTypeId
   keyword: string;
   lat: number;
   lng: number;

@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export interface PlanData {
-  id: number;
+  id: number | string;
   title: string;
   lastModified: string;
   isFavorite: boolean;
@@ -12,24 +13,66 @@ export interface PlanData {
 
 interface PlanCardProps {
   data: PlanData;
-  onToggleFavorite: (id: number) => void;
+  onToggleFavorite: (id: number | string) => void;
+  onDelete?: (id: number | string) => void;
+  onRename?: (id: number | string, newTitle: string) => void;
+  onCopyLink?: (id: number | string) => void;
 }
 
-const PlanCard: React.FC<PlanCardProps> = ({ data, onToggleFavorite }) => {
-  // ✅ 더보기 버튼 상태 관리
+const PlanCard: React.FC<PlanCardProps> = ({
+  data,
+  onToggleFavorite,
+  onDelete,
+  onRename,
+  onCopyLink,
+}) => {
+  const navigate = useNavigate();
   const [isMoreActive, setIsMoreActive] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(data.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing) inputRef.current?.focus();
+  }, [isEditing]);
+
+  const handleUpdateTitle = () => {
+    if (editValue.trim() !== "" && editValue !== data.title) {
+      onRename?.(data.id, editValue);
+    } else {
+      setEditValue(data.title);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleUpdateTitle();
+    if (e.key === "Escape") {
+      setEditValue(data.title);
+      setIsEditing(false);
+    }
+  };
+
+  // 카드 클릭 시 지도 페이지로 이동 (버튼 클릭 시엔 방지)
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button") || isEditing) return;
+    navigate(`/map?roomId=${data.id}`);
+  };
 
   return (
-    <div className="flex flex-col w-[376px] h-[340px] shrink-0 rounded-[10px] border border-[#BCBCCE] bg-[#FEFEFE] overflow-hidden shadow-sm hover:shadow-md transition-all">
-      {/*상단 이미지 영역 (240px) */}
+    <div
+      onClick={handleCardClick}
+      className="flex flex-col w-[376px] h-[340px] shrink-0 rounded-[10px] border border-[#BCBCCE] bg-[#FEFEFE] overflow-hidden shadow-sm hover:shadow-md transition-all relative cursor-pointer"
+    >
+      {/* 1. 상단 이미지 영역 */}
       <div
-        className="relative h-[240px] w-full bg-lightgray bg-center bg-cover bg-no-repeat"
+        className="relative h-[240px] w-full bg-lightgray bg-center bg-cover bg-no-repeat overflow-hidden"
         style={{ backgroundImage: `url(${data.image})` }}
       >
-        {/* 즐겨찾기 버튼 */}
+        {/* 즐겨찾기 별 */}
         <button
           onClick={() => onToggleFavorite(data.id)}
-          className="absolute top-4 left-4 w-10 h-10 flex items-center justify-center bg-primary-100 rounded-full shadow-sm cursor-pointer transition-all hover:scale-105 active:scale-95"
+          className="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center bg-primary-100 rounded-full shadow-sm cursor-pointer transition-all hover:scale-105 active:scale-95"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -64,79 +107,118 @@ const PlanCard: React.FC<PlanCardProps> = ({ data, onToggleFavorite }) => {
           </svg>
         </button>
 
-        {/* ✅ 더보기 버튼: 클릭 상태에 따라 스타일 변경 */}
-        <button
-          onClick={() => setIsMoreActive(!isMoreActive)}
-          className={`absolute bottom-4 right-4 w-10 h-10 flex items-center justify-center transition-all cursor-pointer shadow-sm
-            ${isMoreActive ? "bg-primary-500 rounded-[20px]" : "bg-primary-100 rounded-full hover:bg-white"}
-          `}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="27"
-            height="27"
-            viewBox="0 0 27 27"
-            fill="none"
+        {/* 더보기 버튼 & 서랍 */}
+        <div className="absolute right-4 bottom-4 flex flex-col items-center gap-1 z-[20]">
+          <button
+            onClick={() => setIsMoreActive(!isMoreActive)}
+            className={`w-10 h-10 flex items-center justify-center transition-all duration-300 cursor-pointer shadow-sm ${isMoreActive ? "bg-primary-500 rounded-[20px] -translate-y-[96px]" : "bg-primary-100 rounded-full hover:bg-white"}`}
           >
-            <mask
-              id="mask_more"
-              style={{ maskType: "alpha" }}
-              maskUnits="userSpaceOnUse"
-              x="0"
-              y="0"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
               width="27"
               height="27"
+              viewBox="0 0 27 27"
+              fill="none"
             >
-              <rect width="26.6667" height="26.6667" fill="#D9D9D9" />
-            </mask>
-            <g mask="url(#mask_more)">
-              <path
-                d="M6.92253 14.9998C6.46419 14.9998 6.07188 14.8366 5.74558 14.5101C5.4191 14.1838 5.25586 13.7915 5.25586 13.3332C5.25586 12.8748 5.4191 12.4825 5.74558 12.1562C6.07188 11.8297 6.46419 11.6665 6.92253 11.6665C7.38086 11.6665 7.77327 11.8297 8.09975 12.1562C8.42604 12.4825 8.58919 12.8748 8.58919 13.3332C8.58919 13.7915 8.42604 14.1838 8.09975 14.5101C7.77327 14.8366 7.38086 14.9998 6.92253 14.9998ZM13.3328 14.9998C12.8745 14.9998 12.4822 14.8366 12.1559 14.5101C11.8294 14.1838 11.6661 13.7915 11.6661 13.3332C11.6661 12.8748 11.8294 12.4825 12.1559 12.1562C12.4822 11.8297 12.8745 11.6665 13.3328 11.6665C13.7911 11.6665 14.1835 11.8297 14.5097 12.1562C14.8362 12.4825 14.9995 12.8748 14.9995 13.3332C14.9995 13.7915 14.8362 14.1838 14.5097 14.5101C14.1835 14.8366 13.7911 14.9998 13.3328 14.9998ZM19.7431 14.9998C19.2847 14.9998 18.8923 14.8366 18.5659 14.5101C18.2396 14.1838 18.0764 13.7915 18.0764 13.3332C18.0764 12.8748 18.2396 12.4825 18.5659 12.1562C18.8923 11.8297 19.2847 11.6665 19.7431 11.6665C20.2014 11.6665 20.5937 11.8297 20.92 12.1562C21.2465 12.4825 21.4097 12.8748 21.4097 13.3332C21.4097 13.7915 21.2465 14.1838 20.92 14.5101C20.5937 14.8366 20.2014 14.9998 19.7431 14.9998Z"
-                /* 클릭 시 아이콘 색상을 하얀색(#FFFFFF)으로 변경 */
-                fill={isMoreActive ? "#FFFFFF" : "#1A40FF"}
-              />
-            </g>
-          </svg>
-        </button>
+              <mask
+                id="mask_more"
+                style={{ maskType: "alpha" }}
+                maskUnits="userSpaceOnUse"
+                x="0"
+                y="0"
+                width="27"
+                height="27"
+              >
+                <rect width="26.6667" height="26.6667" fill="#D9D9D9" />
+              </mask>
+              <g mask="url(#mask_more)">
+                <path
+                  d="M6.92253 14.9998C6.46419 14.9998 6.07188 14.8366 5.74558 14.5101C5.4191 14.1838 5.25586 13.7915 5.25586 13.3332C5.25586 12.8748 5.4191 12.4825 5.74558 12.1562C6.07188 11.8297 6.46419 11.6665 6.92253 11.6665C7.38086 11.6665 7.77327 11.8297 8.09975 12.1562C8.42604 12.4825 8.58919 12.8748 8.58919 13.3332C8.58919 13.7915 8.42604 14.1838 8.09975 14.5101C7.77327 14.8366 7.38086 14.9998 6.92253 14.9998ZM13.3328 14.9998C12.8745 14.9998 12.4822 14.8366 12.1559 14.5101C11.8294 14.1838 11.6661 13.7915 11.6661 13.3332C11.6661 12.8748 11.8294 12.4825 12.1559 12.1562C12.4822 11.8297 12.8745 11.6665 13.3328 11.6665C13.7911 11.6665 14.1835 11.8297 14.5097 12.1562C14.8362 12.4825 14.9995 12.8748 14.9995 13.3332C14.9995 13.7915 14.8362 14.1838 14.5097 14.5101C14.1835 14.8366 13.7911 14.9998 13.3328 14.9998ZM19.7431 14.9998C19.2847 14.9998 18.8923 14.8366 18.5659 14.5101C18.2396 14.1838 18.0764 13.7915 18.0764 13.3332C18.0764 12.8748 18.2396 12.4825 18.5659 12.1562C18.8923 11.8297 19.2847 11.6665 19.7431 11.6665C20.2014 11.6665 20.5937 11.8297 20.92 12.1562C21.2465 12.4825 21.4097 12.8748 21.4097 13.3332C21.4097 13.7915 21.2465 14.1838 20.92 14.5101C20.5937 14.8366 20.2014 14.9998 19.7431 14.9998Z"
+                  fill={isMoreActive ? "#FFFFFF" : "#1A40FF"}
+                />
+              </g>
+            </svg>
+          </button>
+          <div
+            className={`absolute bottom-0 w-[76px] h-[92px] flex flex-col items-center justify-around py-1 transition-all duration-300 border border-[#8CA2FF] rounded-[8px] bg-[#FEFEFE] shadow-lg ${isMoreActive ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
+          >
+            <button
+              onClick={() => {
+                setIsEditing(true);
+                setIsMoreActive(false);
+              }}
+              className="text-[10px] font-bold text-gray-700 hover:text-primary-600"
+            >
+              이름 변경
+            </button>
+            <div className="w-[60px] h-[1px] bg-[#8CA2FF]/30" />
+            <button
+              onClick={() => {
+                onCopyLink?.(data.id);
+                setIsMoreActive(false);
+              }}
+              className="text-[10px] font-bold text-gray-700 hover:text-primary-600"
+            >
+              링크 복사
+            </button>
+            <div className="w-[60px] h-[1px] bg-[#8CA2FF]/30" />
+            <button
+              onClick={() => {
+                onDelete?.(data.id);
+                setIsMoreActive(false);
+              }}
+              className="text-[10px] font-bold text-error-default"
+            >
+              삭제하기
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* 2. 하단 정보 영역 (100px) */}
-      <div className="flex flex-col h-[100px] p-[10px_20px] gap-[10px] w-full bg-white">
+      {/* 2. 하단 정보 영역 */}
+      <div className="flex flex-col h-[100px] p-[10px_20px] gap-[10px] w-full bg-white relative z-10">
         <div className="flex justify-between items-center w-full">
-          <h3 className="text-[18px] font-bold text-gray-900 truncate flex-1 mr-2">
-            {data.title}
-          </h3>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleUpdateTitle}
+              onKeyDown={handleKeyDown}
+              className="text-[18px] font-bold text-gray-900 border-b-2 border-primary-500 outline-none flex-1 mr-2 bg-primary-50 px-1 rounded-sm"
+            />
+          ) : (
+            <h3 className="text-[18px] font-bold text-gray-900 truncate flex-1 mr-2">
+              {data.title}
+            </h3>
+          )}
           <button className="h-[30px] px-3 bg-[#E5EAFF] text-[#1A40FF] text-[12px] font-medium rounded-full shrink-0">
-            {data.country ? data.country : "나라입력"}
+            {data.country || "나라입력"}
           </button>
         </div>
-
         <div className="flex justify-between items-center w-full">
           <div className="flex items-center">
             <div className="flex -space-x-[18px]">
-              {data.participants.slice(0, 6).map((src, i) => (
+              {/* ✅ 안전장치: participants가 없으면 빈 배열 취급 */}
+              {(data.participants || []).slice(0, 6).map((src, i) => (
                 <img
                   key={i}
                   src={src}
-                  className="w-[32px] h-[32px] aspect-square rounded-full border border-white bg-gray-200 object-cover shrink-0"
-                  alt="participant"
+                  className="w-[32px] h-[32px] rounded-full border border-white bg-gray-200 object-cover shrink-0"
+                  alt="avatar"
                 />
               ))}
             </div>
-            {data.participants.length > 6 && (
+            {/* ✅ 안전장치: length를 읽을 때도 에러 안 나게 처리 */}
+            {(data.participants || []).length > 6 && (
               <span className="ml-3 text-[14px] text-gray-400 font-medium">
-                +{data.participants.length - 6}
+                +{(data.participants || []).length - 6}
               </span>
             )}
           </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="text-gray-300 text-body5 leading-[20px] tracking-[-0.28px]">
-              마지막 수정
-            </span>
-            <span className="text-gray-400 text-body5 leading-[20px] tracking-[-0.28px] font-medium">
-              {data.lastModified}
-            </span>
+          <div className="flex items-center gap-1.5 text-gray-400 text-[12px]">
+            <span>마지막 수정</span>
+            <span className="font-medium">{data.lastModified}</span>
           </div>
         </div>
       </div>
