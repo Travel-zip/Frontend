@@ -10,19 +10,15 @@ import Button from "../components/common/Button";
 
 // 기존 이미지 임포트
 import exitIcon from "../assets/icons/exit_to_app.svg";
-import TrashImg from "../assets/Design_img/source/trash.png";
-import OutImg from "../assets/Design_img/source/out.png";
 
 /** =========================================================================
  * [설정 및 컴포넌트 정의]
  * ========================================================================= */
 const AGORA_APP_ID = "882e4424401f46b1af80749bc88d5edb";
-// 🌟 주의: 테스트하실 방 이름에 맞는 토큰으로 꼭 교체하세요!
 const AGORA_TOKEN =
-  "007eJxTYAhs8V7zMG6X2urWab5lmm8e/7qZbfYmWX/vOYHkxfNnu85XYLCwMEo1MTEyMTEwTDMxSzJMTLMwMDexTEq2sEgxTU1JuvH+TmZDICPDWXMPJkYGCATxJRiK8vNzdStLszLzdA3NzU0tgcDYwMjShIEBAMEsJxE=";
+  "007eJxTYMj0OX7heNzRtM1WEqGcWZPDl6/c4bhwti5fBYNg5YI1dh8VGCwsjFJNTIxMTAwM00zMkgwT0ywMzE0sk5ItLFJMU1OSzGLuZTYEMjK8OredmZEBAkF8CYai/Pxc3crSrMw8XUNzc1NLIDA2MLI0YWAAALinJHU=";
 const ROOM_ID = "jeju-trip-2025";
 
-// --- 아이콘 컴포넌트 (기존과 동일) ---
 const MicIcon = ({ isActive }: { isActive: boolean }) => {
   if (isActive) {
     return (
@@ -106,7 +102,6 @@ const AI_PLAN_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(rawA
 const rawChatSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><mask id="mask0_439_412" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#D9D9D9"/></mask><g mask="url(#mask0_439_412)"><path d="M10.417 22.9165H29.5837V20.4165H10.417V22.9165ZM10.417 17.9165H29.5837V15.4165H10.417V17.9165ZM10.417 12.9165H29.5837V10.4165H10.417V12.9165ZM35.8337 35.064L29.9362 29.1665H7.17991C6.33796 29.1665 5.62533 28.8748 5.04199 28.2915C4.45866 27.7082 4.16699 26.9955 4.16699 26.1536V7.17942C4.16699 6.33748 4.45866 5.62484 5.04199 5.0415C5.62533 4.45817 6.33796 4.1665 7.17991 4.1665H32.8207C33.6627 4.1665 34.3753 4.45817 34.9587 5.0415C35.542 5.62484 35.8337 6.33748 35.8337 7.17942V35.064ZM7.17991 26.6665H31.0003L33.3337 28.9744V7.17942C33.3337 7.05109 33.2802 6.93359 33.1732 6.82692C33.0666 6.71998 32.9491 6.6665 32.8207 6.6665H7.17991C7.05158 6.6665 6.93408 6.71998 6.82741 6.82692C6.72046 6.93359 6.66699 7.05109 6.66699 7.17942V26.1536C6.66699 26.2819 6.72046 26.3994 6.82741 26.5061C6.93408 26.613 7.05158 26.6665 7.17991 26.6665Z" fill="#FEFEFE"/></g></svg>`;
 const CHAT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(rawChatSvg)}`;
 
-// 🌟 명세서에 적힌 고유 번호로 변경! 백엔드가 가장 좋아하는 형태입니다.
 const CATEGORIES = [
   { id: "all", label: "전체", icon: "🔍" },
   { id: "attraction", label: "관광지", icon: "🏞️" },
@@ -139,13 +134,11 @@ export default function MapPage() {
   const [keyword, setKeyword] = useState("");
   const [selectedCat, setSelectedCat] = useState(CATEGORIES[0]);
   const [isCatOpen, setIsCatOpen] = useState(false);
-  const [selectedPlaces, setSelectedPlaces] = useState<any[]>([]);
+  const [selectedPlaces, setSelectedPlaces] = useState<any[]>([]); // 🌟 장소 보관함
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
 
-  // 🌟 내 로그인 ID를 가져옵니다. (테스트 시 각기 다른 ID로 로그인 필수!)
   const myLoginId = localStorage.getItem("loginId") || "나";
-
   const [participants, setParticipants] = useState<any[]>([
     { id: myLoginId, name: myLoginId, isMuted: true },
   ]);
@@ -173,16 +166,38 @@ export default function MapPage() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      console.log("🚨 [웹소켓 수신 데이터]:", data);
       if (data.type === "CHAT") {
         setMessages((prev) => [...prev, data]);
       } else if (data.type === "PLACES") {
         if (data.places && data.places.length > 0) {
           showToast(`📍 AI가 장소를 인식했어요: ${data.places.join(", ")}`);
+
+          // 🌟 핵심 1: 마이크로 말한 장소를 selectedPlaces에 즉시 자동 추가!
+          const aiPlaces = data.places.map(
+            (placeName: string, index: number) => ({
+              contentid: `ai-place-${Date.now()}-${index}`,
+              contentId: `ai-place-${Date.now()}-${index}`,
+              title: placeName,
+              mapx: mapInstance.current?.getCenter().getLng() || 126.570667,
+              mapy: mapInstance.current?.getCenter().getLat() || 33.450701,
+            }),
+          );
+
+          setSelectedPlaces((prev) => {
+            const existingTitles = prev.map((p) => p.title);
+            const newPlaces = aiPlaces.filter(
+              (np: any) => !existingTitles.includes(np.title),
+            );
+            return [...prev, ...newPlaces];
+          });
+        } else if (data.type === "NAVIGATE_PLAN") {
+          showToast(
+            "누군가 AI 일정을 생성했습니다! 결과 화면으로 이동합니다 🚀",
+          );
+          navigate(`/plan?roomId=${currentRoomId}`);
         }
       }
     };
-
     return () => socket.close();
   }, [currentRoomId]);
 
@@ -202,12 +217,6 @@ export default function MapPage() {
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
-
-            // 🌟 [핵심 수정 1] 내 화면에 직접 setMessages 하던 코드를 삭제했습니다.
-            // 그래야 서버에서 다시 돌아오는(Broadcast) 데이터를 통해
-            // 나 + 상대방 메시지가 순서대로 예쁘게 쌓입니다.
-
-            // 🌟 [핵심 수정 2] 백엔드 규격에 맞춰 'type' 필드를 제거했습니다. (DB 저장 성공률 100%)
             if (ws.current?.readyState === WebSocket.OPEN) {
               ws.current.send(
                 JSON.stringify({
@@ -221,7 +230,6 @@ export default function MapPage() {
         }
       };
 
-      // 🌟 [추가] 인식이 중간에 끊기지 않게 살려주는 로직
       recognition.onend = () => {
         if (isMicActive) {
           try {
@@ -232,7 +240,7 @@ export default function MapPage() {
 
       recognitionRef.current = recognition;
     }
-  }, [currentRoomId, myLoginId, isMicActive]); // isMicActive 의존성 추가
+  }, [currentRoomId, myLoginId, isMicActive]);
 
   /** 3. Agora 초기화 */
   useEffect(() => {
@@ -285,6 +293,24 @@ export default function MapPage() {
           AGORA_TOKEN,
           myLoginId,
         );
+
+        // 🌟 응급처치: 기존에 방에 있던 사람 불러오기
+        const existingUsers = agoraClient.current.remoteUsers;
+        if (existingUsers.length > 0) {
+          setParticipants((prev) => {
+            const newParticipants = [...prev];
+            existingUsers.forEach((user) => {
+              if (!newParticipants.find((p) => p.id === user.uid)) {
+                newParticipants.push({
+                  id: user.uid,
+                  name: `User ${user.uid}`,
+                  isMuted: true,
+                });
+              }
+            });
+            return newParticipants;
+          });
+        }
       } catch (err) {
         console.error("❌ 아고라 접속 실패:", err);
       }
@@ -298,7 +324,7 @@ export default function MapPage() {
     };
   }, [currentRoomId, myLoginId]);
 
-  /** 장소 추가 로직 */
+  /** 🌟 핵심 2: 장소 수동 추가 로직 (검색해서 클릭 시 리스트에 추가) */
   useEffect(() => {
     (window as any).addPlaceToTrip = (placeId: string) => {
       const place = allFoundPlacesRef.current.find(
@@ -310,15 +336,16 @@ export default function MapPage() {
             prev.some(
               (p) => String(p.contentid || p.contentId) === String(placeId),
             )
-          )
+          ) {
             return prev;
+          }
           return [...prev, place];
         });
+        showToast(`✅ '${place.title}'이(가) 추가되었습니다!`);
       }
     };
   }, []);
 
-  /** 마이크 토글 로직 */
   const handleMicToggle = async () => {
     if (!recognitionRef.current || !agoraClient.current) return;
     try {
@@ -344,11 +371,11 @@ export default function MapPage() {
         );
       }
     } catch (err) {
-      console.error("Mic Error:", err);
+      console.error(err);
     }
   };
 
-  /** 지도 및 검색 로직 */
+  /** 지도 초기화 */
   useEffect(() => {
     const { kakao } = window as any;
     if (!kakao) return;
@@ -395,77 +422,73 @@ export default function MapPage() {
     if (!mapInstance.current || !keyword.trim()) return;
 
     const { kakao } = window as any;
-    // 🌟 카카오맵의 장소 검색 객체를 생성합니다.
     const ps = new kakao.maps.services.Places();
+    const center = mapInstance.current.getCenter();
 
-    // 1. 사용자가 입력한 키워드("제주도 맛집")로 카카오 서버에 먼저 좌표를 물어봅니다.
-    ps.keywordSearch(keyword.trim(), async (data: any, status: any) => {
-      let targetLat, targetLng;
+    const searchOptions = {
+      location: center,
+      radius: 5000,
+      sort: kakao.maps.services.SortBy.ACCURACY,
+    };
 
-      if (status === kakao.maps.services.Status.OK) {
-        // ✅ 카카오가 좌표를 찾았을 때 (예: 제주도로 검색)
-        // 가장 첫 번째로 찾은 장소의 좌표를 타겟으로 잡습니다.
-        targetLat = parseFloat(data[0].y);
-        targetLng = parseFloat(data[0].x);
+    ps.keywordSearch(
+      keyword.trim(),
+      async (data: any, status: any) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const searchLat = Number(data[0].y);
+          const searchLng = Number(data[0].x);
 
-        // 지도를 그곳(예: 제주도)으로 부드럽게 이동시킵니다! 슝~ ✈️
-        const moveLatLon = new kakao.maps.LatLng(targetLat, targetLng);
-        mapInstance.current.setCenter(moveLatLon);
-      } else {
-        // ❌ 카카오가 위치를 못 찾았을 때는 그냥 현재 내 화면의 중앙을 씁니다.
-        const center = mapInstance.current.getCenter();
-        targetLat = center.getLat();
-        targetLng = center.getLng();
-      }
+          try {
+            const res = await searchApi.searchPlaces({
+              category:
+                selectedCat.id === "all" ? undefined : String(selectedCat.id),
+              keyword: String(keyword.trim()),
+              lat: Number(searchLat.toFixed(6)),
+              lng: Number(searchLng.toFixed(6)),
+              radius: 2000,
+              roomId: String(currentRoomId),
+            });
 
-      // 2. 이제 타겟 좌표(제주도)가 확실해졌으니, 우리 백엔드 서버에 진짜 데이터를 요청합니다!
-      try {
-        const res = await searchApi.searchPlaces({
-          category:
-            selectedCat.id === "all" ? undefined : String(selectedCat.id),
-          keyword: String(keyword.trim()),
-          // 🌟 소수점 6자리까지만 남기고 자르기! (Number로 감싸서 문자열을 숫자로 변환)
-          lat: Number(targetLat.toFixed(6)),
-          lng: Number(targetLng.toFixed(6)),
-          // 🌟 안전하게 반경을 2000으로 줄이기
-          radius: Math.floor(2000),
-          roomId: String(currentRoomId),
-        });
+            if (!res.data || res.data.length === 0) {
+              alert(`'${keyword}'에 대한 여행지 데이터가 없습니다.`);
+              return;
+            }
 
-        if (!res.data || res.data.length === 0) {
-          alert("주변에 검색 결과가 없습니다.");
-          return;
+            setSearchResults(res.data);
+            displayMarkers(res.data);
+            setIsCatOpen(false);
+            mapInstance.current.panTo(
+              new kakao.maps.LatLng(searchLat, searchLng),
+            );
+          } catch (error) {
+            console.error("검색 실패:", error);
+          }
+        } else {
+          alert("카카오 지도에서 위치를 찾을 수 없습니다.");
         }
-
-        setSearchResults(res.data);
-        displayMarkers(res.data); // PlanPage는 displayMarkersSearch
-        setIsCatOpen(false);
-      } catch (error) {
-        console.error("검색 실패:", error);
-      }
-    });
+      },
+      searchOptions,
+    );
   };
 
   const handleNearbySearch = async (cat: string) => {
     if (!mapInstance.current) return;
-
     const center = mapInstance.current.getCenter();
-    const currentLat = center.getLat();
-    const currentLng = center.getLng();
 
     try {
-      // 🌟 다시 상준님의 원래 '주변 검색 전용 API'로 롤백!
       const res = await searchApi.getNearbyPlaces({
-        lat: Number(currentLat.toFixed(6)),
-        lng: Number(currentLng.toFixed(6)),
+        lat: Number(center.getLat().toFixed(6)),
+        lng: Number(center.getLng().toFixed(6)),
         radius: 2000,
-        // 🌟 여기가 핵심 해결책: "food" 대신 "39"(식당), "attraction" 대신 "12"(관광지) 전송!
         categories: cat,
-        roomId: currentRoomId, // 명세서에서 강조한 필수값!
-      } as any); // 타입 에러 방지용
+        roomId: String(currentRoomId),
+      } as any);
 
+      if (!res.data || res.data.length === 0) {
+        alert("주변에 해당 장소가 없습니다.");
+        return;
+      }
       setSearchResults(res.data);
-      // ⚠️ 주의: PlanPage에서는 displayMarkersSearch(res.data); 로 이름 꼭 맞춰주세요!
       displayMarkers(res.data);
     } catch (error) {
       console.error("주변 검색 실패:", error);
@@ -473,9 +496,24 @@ export default function MapPage() {
     }
   };
 
+  const handleGeneratePlan = () => {
+    // 1. 서버(웹소켓)로 "다 같이 넘어가자!" 신호 전송
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(
+        JSON.stringify({
+          type: "NAVIGATE_PLAN",
+          roomId: currentRoomId,
+          sender: myLoginId,
+          text: "system_navigate",
+        }),
+      );
+    }
+    // 2. 나 자신도 넘어감
+    navigate(`/plan?roomId=${currentRoomId}`);
+  };
+
   return (
     <div className="flex w-full h-screen bg-white font-pretendard overflow-hidden relative">
-      {/* 토스트 메시지 */}
       {toastMsg && (
         <div className="absolute top-[40px] left-[55%] -translate-x-1/2 z-[9999] bg-gray-800/90 text-white px-6 py-3 rounded-full shadow-2xl font-medium flex items-center gap-2 animate-fadeIn transition-opacity">
           {toastMsg}
@@ -490,7 +528,9 @@ export default function MapPage() {
           {
             label: "AI 일정 생성",
             icon: AI_PLAN_ICON,
-            onClick: () => navigate(`/plan?roomId=${currentRoomId}`),
+            // 🌟 추가된 장소 데이터들을 localStorage를 통해 PlanPage로 넘겨줄 수도 있지만,
+            // 백엔드가 이미 검색 기록(TourPlaceEntity)을 갖고 있으므로 그냥 넘어갑니다!
+            onClick: handleGeneratePlan,
           },
           { label: "나가기", icon: exitIcon, onClick: () => navigate("/") },
         ]}
@@ -529,34 +569,29 @@ export default function MapPage() {
                 <div
                   className={`px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm ${isMe ? "bg-primary-600 text-white" : "bg-white/80 text-gray-600"}`}
                 >
-                  {p.name}
-                  {isMe && " (나)"}
+                  {p.name} {isMe && " (나)"}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* 상단 검색 버튼들 */}
-        <div className="absolute top-[80px] left-[40px] z-[100] flex gap-2">
-          <Button
-            label="🍕 근처 식당"
-            variant="outline"
-            customSize="px-6 py-3 bg-white shadow-xl rounded-full"
-            textClassName="font-bold"
-            onClick={() => handleNearbySearch("food")}
-          />
-          <Button
-            label="🏞️ 근처 명소"
-            variant="outline"
-            customSize="px-6 py-3 bg-white shadow-xl rounded-full"
-            textClassName="font-bold"
-            onClick={() => handleNearbySearch("attraction")}
-          />
+        {/* 🌟 3. 핵심 3: 전체 카테고리 버튼 추가! */}
+        <div className="absolute top-[80px] left-[40px] z-[100] flex flex-wrap gap-2 w-[700px]">
+          {CATEGORIES.filter((cat) => cat.id !== "all").map((cat) => (
+            <Button
+              key={cat.id}
+              label={`${cat.icon} 근처 ${cat.label}`}
+              variant="outline"
+              customSize="px-4 py-2 bg-white shadow-xl rounded-full hover:bg-primary-50 transition-colors"
+              textClassName="font-bold text-sm"
+              onClick={() => handleNearbySearch(cat.id)}
+            />
+          ))}
         </div>
 
         {/* 검색창 */}
-        <div className="absolute top-[240px] left-1/2 -translate-x-1/2 z-[100] w-[1192px] px-[60px]">
+        <div className="absolute top-[200px] left-1/2 -translate-x-1/2 z-[100] w-[1192px] px-[60px]">
           <div className="flex items-center bg-white rounded-[30px] shadow-2xl p-1 border border-gray-100">
             <div className="relative">
               <button
@@ -591,7 +626,7 @@ export default function MapPage() {
                 className="flex-1 p-4 outline-none text-body3 bg-transparent"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder={`${selectedCat.label} 검색`}
+                placeholder="장소 검색"
               />
               <button
                 type="submit"
@@ -603,7 +638,7 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* 🌟 채팅창 렌더링 영역 (완벽 수정됨) */}
+        {/* 채팅창 렌더링 영역 */}
         {isChatActive && (
           <div className="absolute bottom-[140px] right-[40px] w-[360px] h-[480px] bg-white/95 backdrop-blur shadow-2xl rounded-[24px] z-[300] flex flex-col overflow-hidden border border-primary-100 animate-fadeIn">
             <div className="p-5 bg-primary-600 text-white font-bold flex justify-between items-center">

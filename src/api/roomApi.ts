@@ -85,7 +85,7 @@ export const roomApi = {
       return Promise.resolve({
         data: {
           token:
-            "007eJxTYAhs8V7zMG6X2urWab5lmm8e/7qZbfYmWX/vOYHkxfNnu85XYLCwMEo1MTEyMTEwTDMxSzJMTLMwMDexTEq2sEgxTU1JuvH+TmZDICPDWXMPJkYGCATxJRiK8vNzdStLszLzdA3NzU0tgcDYwMjShIEBAMEsJxE=",
+            "007eJxTYMj0OX7heNzRtM1WEqGcWZPDl6/c4bhwti5fBYNg5YI1dh8VGCwsjFJNTIxMTAwM00zMkgwT0ywMzE0sk5ItLFJMU1OSzGLuZTYEMjK8OredmZEBAkF8CYai/Pxc3crSrMw8XUNzc1NLIDA2MLI0YWAAALinJHU=",
         },
       });
     }

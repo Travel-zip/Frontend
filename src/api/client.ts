@@ -13,7 +13,7 @@ const client: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000,
+  timeout: 60000,
 });
 
 // 요청 인터셉터 (토큰 주입)
