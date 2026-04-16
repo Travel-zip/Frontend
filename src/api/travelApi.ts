@@ -9,25 +9,29 @@ export interface GeneratePlanRequest {
 }
 
 export const travelApi = {
-  /**
-   * 4-1) 여행계획 생성 (JSON 반환 + DB 저장)
-   * Method: POST
-   * URL: /travel
-   */
+  // 1. 기존: 여행 계획 생성 (POST /travel)
   generatePlan: (data: GeneratePlanRequest) => {
     if (IS_MOCK) {
       console.log(
         `🚀 [Mock API] AI 여행 계획 생성 요청 (방 ID: ${data.roomId})`,
       );
-
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve(MOCK_DATA.travelPlan); // MOCK_DATA에 만들어둔 가짜 데이터 반환
+          resolve(MOCK_DATA.travelPlan);
         }, 1500);
       });
     }
-
-    // 진짜 백엔드 API 호출 (client에 기본 URL이 설정되어 있다면 /travel 만 쓰면 됩니다)
     return client.post("/travel", data);
+  },
+
+  // 🌟 2. 신규: 방에 들어왔을 때 가장 최근에 짰던 일정 불러오기 (GET)
+  // 지호님이 알려주신 정확한 주소를 사용합니다!
+  getLatestPlan: (roomId: string) => {
+    if (IS_MOCK) {
+      console.log(`🚀 [Mock API] ${roomId} 방의 최신 일정 불러오기`);
+      return Promise.resolve(MOCK_DATA.travelPlan); // 임시로 목데이터 반환
+    }
+    // 진짜 백엔드 호출!
+    return client.get(`/api/rooms/${roomId}/travel-plan/latest`);
   },
 };

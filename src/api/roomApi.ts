@@ -79,19 +79,23 @@ export const roomApi = {
     return client.post(`/api/rooms/${roomId}/join`);
   },
 
-  getAgoraToken: (roomId: string) => {
+  // 🌟 아고라 토큰 가져오기 (수정됨)
+  getAgoraToken: (roomId: string, userId: string) => {
     if (IS_MOCK) {
-      // 목데이터일 때는 예전 임시 토큰을 그냥 반환
       return Promise.resolve({
-        data: {
-          token:
-            "007eJxTYMj0OX7heNzRtM1WEqGcWZPDl6/c4bhwti5fBYNg5YI1dh8VGCwsjFJNTIxMTAwM00zMkgwT0ywMzE0sk5ItLFJMU1OSzGLuZTYEMjK8OredmZEBAkF8CYai/Pxc3crSrMw8XUNzc1NLIDA2MLI0YWAAALinJHU=",
-        },
+        data: { token: "MOCK_TOKEN_HERE" },
       });
     }
-    // 실제 서버에 토큰 발급 요청 (엔드포인트는 백엔드 팀원과 맞춰보세요!)
-    return client.get(`/api/rooms/${roomId}/agora-token`);
+    // 지호님이 만든 주소: /api/agora/token?roomId=...&userId=...
+    // axios의 params 설정을 쓰면 자동으로 뒤에 ?roomId=... 가 붙습니다.
+    return client.get(`/api/agora/token`, {
+      params: {
+        roomId: roomId,
+        userId: userId,
+      },
+    });
   },
+
   renameRoom: (roomId: string | number, newTitle: string) => {
     // 백엔드 API 주소에 맞춰서 수정 (예: PATCH /api/rooms/123)
     return client.patch(`/api/rooms/${roomId}`, {
