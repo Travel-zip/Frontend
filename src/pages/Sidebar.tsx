@@ -24,6 +24,7 @@ export interface PlanItem {
   memo: string;
   lat: number;
   lng: number;
+  imageUrl?: string;
 }
 
 export interface SidebarProps {

@@ -15,9 +15,6 @@ import exitIcon from "../assets/icons/exit_to_app.svg";
 /** =========================================================================
  * [설정 및 아이콘 정의]
  * ========================================================================= */
-/** =========================================================================
- * [아이콘 정의 영역] - 생략 없이 풀버전 복구!
- * ========================================================================= */
 const AGORA_APP_ID = "882e4424401f46b1af80749bc88d5edb";
 
 const rawAddSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M20 10V30M10 20H30" stroke="#1C1B1F" stroke-width="3" stroke-linecap="round"/></svg>`;
@@ -147,7 +144,7 @@ export default function TripWorkspace() {
   const safeRoomId = currentRoomId as string;
 
   // --- [States] ---
-  const [isMapLoaded, setIsMapLoaded] = useState(false); // 🌟 핵심 1: 지도 로딩 완료 확인 변수
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "plan">("map");
   const [showSearchUI, setShowSearchUI] = useState(false);
 
@@ -169,6 +166,9 @@ export default function TripWorkspace() {
   const [isLoading, setIsLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const lastSentTime = useRef(0); // 전송 빈도 조절용
+  const [lockedBy, setLockedBy] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   // --- [Refs] ---
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -183,6 +183,7 @@ export default function TripWorkspace() {
   const recognitionRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const allFoundPlacesRef = useRef<any[]>([]);
+  const cursorOverlaysRef = useRef<{ [uid: string]: any }>({});
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -215,16 +216,19 @@ export default function TripWorkspace() {
     };
   }, []);
 
-  /** 방 진입 시 일정 불러오기 */
+  /** 🌟 방 진입 시 일정 불러오기 (원복된 엄격한 파서) */
   const loadExistingPlan = async () => {
     try {
       const res: any = await travelApi.getLatestPlan(safeRoomId);
+
       if (res.data && res.data.items && res.data.items.length > 0) {
         setPlanData(res.data.items);
         setViewMode("plan");
+        console.log("✅ 저장된 일정을 성공적으로 불러왔습니다!");
       } else if (res && res.items && res.items.length > 0) {
         setPlanData(res.items);
         setViewMode("plan");
+        console.log("✅ 저장된 일정을 성공적으로 불러왔습니다!");
       } else {
         console.log("아직 저장된 일정이 없습니다.");
       }
@@ -232,51 +236,94 @@ export default function TripWorkspace() {
       console.log("아직 일정이 없거나 방이 처음 생성되었습니다.");
     }
   };
+  //남들에게 내 상태를 알리는 함수
+  const broadcastLock = (isLocked: boolean) => {
+    if (agoraClient.current) {
+      const payload = JSON.stringify({ type: "LOCK_PLAN", isLocked });
+      const encoder = new TextEncoder();
+      (agoraClient.current as any).sendStreamMessage(
+        encoder.encode(payload),
+        false,
+      );
+    }
+  };
 
-  /** AI 일정 생성 */
+  /**AI 일정 생성 (날아감 방지 + 엄격한 파서 + 웹소켓 통째로 전송) */
   const generateNewPlan = async () => {
-    if (selectedPlaces.length === 0 && planData.length === 0) {
+    //누군가 이미 만들고 있다면 튕겨내기 (이중 방어)
+    if (lockedBy) {
+      showToast(`현재 User ${lockedBy}님이 일정을 생성 중입니다 ⏳`);
+      return;
+    }
+    const existingPlaces = planData.map((p) => p.place);
+    const newPlaces = selectedPlaces.map((p) => p.title);
+    const allPlacesToGenerate = Array.from(
+      new Set([...existingPlaces, ...newPlaces]),
+    );
+
+    if (allPlacesToGenerate.length === 0) {
       alert("선택된 장소가 없습니다. 먼저 장소를 추가해주세요!");
       return;
     }
 
     setIsLoading(true);
+    broadcastLock(true);
     try {
       const requestData = {
         roomId: safeRoomId,
-        selectedPlaceName: selectedPlaces.map((p) => p.title).join(", "),
+        selectedPlaceName: allPlacesToGenerate.join(", "),
         selectedRestaurantName: "",
         selectedStayName: "",
       };
 
       const res: any = await travelApi.generatePlan(requestData as any);
 
+      let newPlanItems: PlanItem[] = [];
       if (res && res.data && res.data.items) {
-        setPlanData(res.data.items);
+        newPlanItems = res.data.items;
       } else if (res && res.items) {
-        setPlanData(res.items);
+        newPlanItems = res.items;
+      } else {
+        throw new Error("서버 응답 데이터 구조 불일치");
       }
 
+      // 1. 내 화면 즉시 갱신
+      setPlanData(newPlanItems);
       setViewMode("plan");
       setShowSearchUI(false);
+      setSelectedPlaces([]);
+      console.log("🔥 [발송 직전 웹소켓 상태 확인] ws.current:", ws.current);
+      console.log(
+        "🔥 [상태 코드] readyState:",
+        ws.current?.readyState,
+        "(1이어야 정상 OPEN 상태입니다)",
+      );
 
       if (ws.current?.readyState === WebSocket.OPEN) {
         ws.current.send(
           JSON.stringify({
-            type: "CHANGE_MODE",
-            mode: "plan",
             roomId: safeRoomId,
+            sender: myLoginId,
+            text: "[[PLAN_UPDATED]]",
           }),
         );
+        console.log("✅ 웹소켓 전송 완료!");
+      } else {
+        console.error(
+          "🚨 앗! 웹소켓 연결이 끊어져서 신호를 보낼 수 없습니다. 현재 상태:",
+          ws.current?.readyState,
+        );
       }
+
+      // 2. 다른 사람들에게 신호 보내기 (데이터 대신 Trigger 역할만)
     } catch (err: unknown) {
       console.error("AI 일정 생성 실패:", err);
       alert("일정 생성에 실패했습니다.");
     } finally {
       setIsLoading(false);
+      broadcastLock(false);
     }
   };
-
   useEffect(() => {
     if (safeRoomId) loadExistingPlan();
   }, [safeRoomId]);
@@ -291,10 +338,30 @@ export default function TripWorkspace() {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log("🔥 [웹소켓 수신 전체 데이터]", data);
+      console.log(`내 아이디: [${myLoginId}], 보낸사람: [${data.sender}]`);
 
+      // 1. 서버가 CHAT으로 보낸 경우
       if (data.type === "CHAT") {
-        setMessages((prev) => [...prev, data]);
-      } else if (data.type === "PLACES") {
+        // 🌟 우리가 약속한 비밀 암호가 들어왔을 때
+        if (data.text === "[[PLAN_UPDATED]]") {
+          // 내가 누른 게 아닐 때만 갱신 (메아리 방지)
+          if (data.sender !== myLoginId) {
+            setViewMode("plan");
+            setShowSearchUI(false);
+            showToast(
+              "🚀 누군가 일정을 생성(갱신)했습니다! 다 함께 이동합니다.",
+            );
+            loadExistingPlan(); // 백엔드 DB에서 최신 일정 불러오기
+          }
+        }
+        // 🌟 일반 텍스트 채팅이거나 SYSTEM 메시지일 때
+        else {
+          setMessages((prev) => [...prev, data]);
+        }
+      }
+      // 2. 서버가 PLACES로 보낸 경우 (AI 장소 추출)
+      else if (data.type === "PLACES") {
         if (data.places && data.places.length > 0) {
           showToast(`📍 AI가 장소를 인식했어요: ${data.places.join(", ")}`);
           const aiPlaces = data.places.map(
@@ -314,16 +381,13 @@ export default function TripWorkspace() {
             return [...prev, ...newPlaces];
           });
         }
-      } else if (data.type === "CHANGE_MODE") {
-        setViewMode(data.mode);
-        if (data.mode === "plan") {
-          showToast("🚀 누군가 일정을 갱신했습니다!");
-          loadExistingPlan();
-        }
       }
+
+      // 🚨 기존에 있던 CHANGE_MODE 부분은 백엔드가 보내주지 않으므로 완전히 삭제했습니다.
     };
+
     return () => socket.close();
-  }, [safeRoomId]);
+  }, [safeRoomId, myLoginId]);
 
   /** Web Speech API */
   useEffect(() => {
@@ -388,8 +452,10 @@ export default function TripWorkspace() {
           });
         });
 
+        // 🌟 유저가 나갔을 때, 혹시 그 사람이 락을 걸고 나갔다면 풀어주기 (안전장치)
         agoraClient.current.on("user-left", (user) => {
           setParticipants((prev) => prev.filter((p) => p.id !== user.uid));
+          setLockedBy((prev) => (prev === String(user.uid) ? null : prev));
         });
 
         agoraClient.current.on("user-published", async (user, mediaType) => {
@@ -421,6 +487,55 @@ export default function TripWorkspace() {
           safeRoomId,
           dynamicToken,
           myLoginId,
+        );
+
+        // 🌟 1. Web SDK에서는 createDataStream 과정이 필요 없으므로 위의 블록은 깔끔하게 삭제했습니다.
+
+        (agoraClient.current as any).on(
+          "stream-message",
+          (uid: string, payload: Uint8Array) => {
+            try {
+              const decoder = new TextDecoder();
+              const data = JSON.parse(decoder.decode(payload));
+
+              if (data.type === "MOUSE_MOVE" && mapInstance.current) {
+                const { kakao } = window as any;
+                const pos = new kakao.maps.LatLng(data.lat, data.lng);
+
+                // 1. 해당 유저의 커서 오버레이가 아직 없다면 새로 생성
+                if (!cursorOverlaysRef.current[uid]) {
+                  const content = document.createElement("div");
+                  content.innerHTML = `
+                    <div style="position: absolute; pointer-events: none; z-index: 50; display: flex; flex-direction: column; items-center; transform: translate(-50%, -50%);">
+                      <svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+                        <path d="M5.65376 2.00018L21.4397 18.2323C22.6865 19.5142 21.778 21.6565 19.9678 21.6565H13.6828C13.1678 21.6565 12.6781 21.8797 12.3364 22.2694L7.5447 27.7323C6.31475 29.1342 3.99951 28.2618 3.99951 26.4014V3.90483C3.99951 2.02298 6.32623 1.11584 7.56459 2.47648L5.65376 2.00018Z" fill="#FF4081" stroke="white" stroke-width="2" />
+                      </svg>
+                      <div style="background-color: #FF4081; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; margin-top: 4px;">
+                        User ${uid}
+                      </div>
+                    </div>
+                  `;
+
+                  const customOverlay = new kakao.maps.CustomOverlay({
+                    position: pos,
+                    content: content,
+                    map: mapInstance.current, // 지도에 부착!
+                  });
+                  cursorOverlaysRef.current[uid] = customOverlay;
+                }
+                // 2. 이미 있다면 위치만 부드럽게 갱신
+                else {
+                  cursorOverlaysRef.current[uid].setPosition(pos);
+                }
+              }
+              // 👇 이 부분 추가! (락 신호를 받았을 때)
+              else if (data.type === "LOCK_PLAN") {
+                setLockedBy(data.isLocked ? uid : null);
+              }
+            } catch (e) {
+              console.error("좌표 파싱 에러", e);
+            }
+          },
         );
 
         const existingUsers = agoraClient.current.remoteUsers;
@@ -479,12 +594,11 @@ export default function TripWorkspace() {
     }
   };
 
-  /** 🌟 핵심 2: 지도 초기화 (강력한 재시도 로직) */
+  /** 지도 초기화 */
   useEffect(() => {
     const initMap = () => {
       const { kakao } = window as any;
       if (!kakao || !kakao.maps) {
-        // 스크립트가 아직 로딩 안됐으면 0.1초 뒤에 다시 시도!
         setTimeout(initMap, 100);
         return;
       }
@@ -492,7 +606,7 @@ export default function TripWorkspace() {
       kakao.maps.load(() => {
         if (mapInstance.current) return;
         mapInstance.current = new kakao.maps.Map(mapRef.current, {
-          center: new kakao.maps.LatLng(33.450701, 126.570667), // 제주도 기본
+          center: new kakao.maps.LatLng(33.450701, 126.570667),
           level: 5,
         });
         clustererInstance.current = new kakao.maps.MarkerClusterer({
@@ -501,16 +615,64 @@ export default function TripWorkspace() {
           minLevel: 6,
         });
         infoWindowInstance.current = new kakao.maps.InfoWindow({ zIndex: 1 });
-
-        // 지도가 100% 로딩되었음을 알림
         setIsMapLoaded(true);
+
+        // 🌟 지도가 로드된 직후, 카카오 지도 마우스 이벤트 리스너 등록!
+        kakao.maps.event.addListener(
+          mapInstance.current,
+          "mousemove",
+          function (mouseEvent: any) {
+            if (!agoraClient.current) return;
+
+            const now = Date.now();
+            if (now - lastSentTime.current > 80) {
+              // 80ms 쓰로틀링 유지
+              const latlng = mouseEvent.latLng; // 화면 %가 아닌 실제 위도/경도!
+
+              const payload = JSON.stringify({
+                type: "MOUSE_MOVE",
+                lat: latlng.getLat(),
+                lng: latlng.getLng(),
+              });
+
+              const encoder = new TextEncoder();
+              (agoraClient.current as any).sendStreamMessage(
+                encoder.encode(payload),
+                false,
+              );
+
+              lastSentTime.current = now;
+            }
+          },
+        );
       });
     };
 
     initMap();
   }, []);
 
-  /** 지도 렌더링 (일정과 검색 결과를 동시에 유연하게 표시) */
+  const handleProfileClick = (targetUid: string) => {
+    // 1. 내 프로필을 눌렀을 때는 무시
+    if (String(targetUid) === String(myLoginId)) {
+      showToast("이것은 내 프로필입니다.");
+      return;
+    }
+
+    // 2. 상대방의 커서 오버레이 객체가 있는지 확인
+    const overlay = cursorOverlaysRef.current[targetUid];
+    if (overlay && mapInstance.current) {
+      // 3. 오버레이에서 현재 위도/경도 좌표를 뽑아내서 그곳으로 지도 이동!
+      const pos = overlay.getPosition();
+      mapInstance.current.panTo(pos);
+      showToast(`🚀 User ${targetUid}님의 위치로 이동했습니다!`);
+    } else {
+      showToast(
+        `User ${targetUid}님의 현재 마우스 위치를 아직 알 수 없습니다.`,
+      );
+    }
+  };
+
+  /** 지도 렌더링 (이미지 포함) */
   const clearMap = () => {
     markersRef.current.forEach((m) => m.setMap(null));
     polylineInstances.current.forEach((p) => p.setMap(null));
@@ -520,7 +682,7 @@ export default function TripWorkspace() {
   };
 
   useEffect(() => {
-    if (!isMapLoaded) return; // 🌟 지도가 켜질 때까지 무조건 기다림!
+    if (!isMapLoaded) return;
 
     const { kakao } = window as any;
     if (!kakao || !mapInstance.current) return;
@@ -529,7 +691,7 @@ export default function TripWorkspace() {
     const bounds = new kakao.maps.LatLngBounds();
     let hasBounds = false;
 
-    // 1. 일정이 있다면 무조건 바탕에 깔아줌
+    // 1. 일정 렌더링
     if (planData.length > 0) {
       const days = Array.from(
         new Set(planData.map((p) => `${p.month}/${p.day}`)),
@@ -556,7 +718,18 @@ export default function TripWorkspace() {
 
         kakao.maps.event.addListener(marker, "click", () => {
           const prefix = selectedDay === null ? "" : `<b>${idx + 1}.</b> `;
-          const content = `<div style="padding:15px; font-size:14px;">${prefix}<b>${item.place}</b><br/><span style="color:#666; font-size:12px;">${item.memo}</span></div>`;
+
+          // 🌟 백엔드가 준 이미지가 있으면 팝업에 추가!
+          const imageHtml = item.imageUrl
+            ? `<img src="${item.imageUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px;" alt="${item.place}" />`
+            : ``;
+
+          const content = `<div style="padding:15px; font-size:14px; width:220px;">
+            ${imageHtml}
+            <div style="font-size:15px; margin-bottom:4px;">${prefix}<b>${item.place}</b></div>
+            <div style="color:#666; font-size:12px; line-height:1.4;">${item.memo}</div>
+          </div>`;
+
           infoWindowInstance.current.setContent(content);
           infoWindowInstance.current.open(mapInstance.current, marker);
         });
@@ -584,7 +757,6 @@ export default function TripWorkspace() {
             selectedDay === null || viewMode === "map" || showSearchUI
               ? DAY_COLORS[dayIndex % DAY_COLORS.length]
               : "#1A40FF",
-          // 검색창이 열려있거나 map 모드일 땐 기존 일정을 옅게 처리
           strokeOpacity: viewMode === "map" || showSearchUI ? 0.3 : 0.8,
           strokeStyle: "solid",
         });
@@ -593,7 +765,7 @@ export default function TripWorkspace() {
       });
     }
 
-    // 2. 검색 결과가 있고, (map 모드이거나 plan모드에서 검색창을 켰을 때) 덧그려줌
+    // 2. 검색 결과 렌더링
     if ((viewMode === "map" || showSearchUI) && searchResults.length > 0) {
       const newPlaces = searchResults.filter(
         (p) =>
@@ -642,7 +814,6 @@ export default function TripWorkspace() {
     selectedDay,
   ]);
 
-  /** 채팅 스크롤 자동 이동 */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isChatActive]);
@@ -726,21 +897,61 @@ export default function TripWorkspace() {
 
   return (
     <div className="flex w-full h-screen bg-white font-pretendard overflow-hidden relative">
-      {toastMsg && (
-        <div className="absolute top-[40px] left-[55%] -translate-x-1/2 z-[9999] bg-gray-800/90 text-white px-6 py-3 rounded-full shadow-2xl font-medium animate-fadeIn">
-          {toastMsg}
+      {/* 🌟 다른 사람들의 실시간 마우스 커서 */}
+      {/* 👇 1. 여기에 예쁜 경고 모달을 추가합니다 👇 */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-[360px] w-full flex flex-col items-center text-center transform transition-all">
+            <div className="w-16 h-16 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center text-3xl mb-5 shadow-inner">
+              ✨
+            </div>
+            <h3 className="text-xl font-extrabold text-gray-800 mb-3">
+              AI 일정을 생성할까요?
+            </h3>
+            <p className="text-gray-500 text-[14px] mb-8 leading-relaxed">
+              일정을 생성하거나 다시 조율하면
+              <br />방 안의 <b>모든 참여자</b>의 화면이
+              <br />
+              새로운 일정으로 함께 변경됩니다.
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setIsConfirmModalOpen(false); // 모달 닫기
+                  generateNewPlan(); // 🚀 실제 일정 생성 함수 실행!
+                }}
+                className="flex-1 py-3.5 bg-primary-600 text-white font-bold rounded-2xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/30"
+              >
+                생성하기
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* 👇 여기서부터 복사해서 덮어씌워 주세요 👇 */}
       {viewMode === "map" ? (
         <Sidebar
           rooms={selectedPlaces}
           listTitle="우리가 모은 장소"
           bottomActions={[
             {
-              label: "AI 일정 생성",
+              // 🌟 1. "AI 일정 생성" 버튼 (map 모드)
+              label: lockedBy ? "다른 유저가 조율 중..." : "AI 일정 생성",
               icon: AI_PLAN_ICON,
-              onClick: generateNewPlan,
+              onClick: () => {
+                if (lockedBy)
+                  return showToast(
+                    `User ${lockedBy}님이 일정을 짜고 있어요 ⏳`,
+                  );
+                setIsConfirmModalOpen(true);
+              },
             },
             { label: "나가기", icon: exitIcon, onClick: () => navigate("/") },
           ]}
@@ -767,17 +978,25 @@ export default function TripWorkspace() {
           listTitle="AI 추천 일정"
           bottomActions={[
             {
+              // 🌟 2. 잃어버렸던 "장소 더 찾기" 버튼 부활! (plan 모드)
               label: showSearchUI ? "검색 닫기" : "장소 더 찾기",
               icon: ADD_PLACE_ICON,
               onClick: () => {
                 setShowSearchUI(!showSearchUI);
-                if (showSearchUI) setSearchResults([]);
+                if (showSearchUI) setSearchResults([]); // 닫을 때 검색 결과 초기화
               },
             },
             {
-              label: "다시 조율",
+              // 🌟 3. "다시 조율" 버튼 (plan 모드)
+              label: lockedBy ? "다른 유저가 조율 중..." : "다시 조율",
               icon: REFRESH_PLAN_ICON,
-              onClick: generateNewPlan,
+              onClick: () => {
+                if (lockedBy)
+                  return showToast(
+                    `User ${lockedBy}님이 일정을 짜고 있어요 ⏳`,
+                  );
+                setIsConfirmModalOpen(true);
+              },
             },
             { label: "나가기", icon: exitIcon, onClick: () => navigate("/") },
           ]}
@@ -791,10 +1010,12 @@ export default function TripWorkspace() {
             return (
               <div
                 key={p.id}
-                className="relative group flex flex-col items-center gap-2"
+                // 👇 onClick 이벤트와 클릭 가능한 마우스 포인터, 호버 시 살짝 커지는 애니메이션을 추가했습니다.
+                onClick={() => handleProfileClick(p.id)}
+                className={`relative group flex flex-col items-center gap-2 transition-transform ${isMe ? "" : "cursor-pointer hover:scale-110"}`}
               >
                 <div
-                  className={`w-16 h-16 rounded-full border-2 shadow-lg bg-gray-300 flex items-center justify-center overflow-hidden relative transition-all ${isMe ? "border-primary-600 ring-4 ring-primary-100" : "border-white"}`}
+                  className={`w-16 h-16 rounded-full border-2 shadow-lg bg-gray-300 flex items-center justify-center overflow-hidden relative transition-all ${isMe ? "border-primary-600 ring-4 ring-primary-100" : "border-white hover:border-primary-400"}`}
                 >
                   {USER_ICON}
                   {p.isMuted && (
@@ -806,7 +1027,7 @@ export default function TripWorkspace() {
                   )}
                 </div>
                 <div
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm ${isMe ? "bg-primary-600 text-white" : "bg-white/80 text-gray-600"}`}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm ${isMe ? "bg-primary-600 text-white" : "bg-white/80 text-gray-600 group-hover:bg-primary-50 group-hover:text-primary-700"}`}
                 >
                   {p.name} {isMe && " (나)"}
                 </div>
@@ -814,7 +1035,6 @@ export default function TripWorkspace() {
             );
           })}
         </div>
-
         {(viewMode === "map" || showSearchUI) && !isLoading && (
           <div className="animate-fadeIn">
             <div className="absolute top-[80px] left-[40px] z-[100] flex flex-wrap gap-2 w-[700px]">
@@ -899,36 +1119,38 @@ export default function TripWorkspace() {
               )}
             </div>
             <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
-              {messages.map((msg, i) => {
-                const isMe = msg.sender === myLoginId;
-                const isSystem = msg.sender === "SYSTEM";
+              {messages
+                .filter((msg) => msg.text !== "[[PLAN_UPDATED]]")
+                .map((msg, i) => {
+                  const isMe = msg.sender === myLoginId;
+                  const isSystem = msg.sender === "SYSTEM";
 
-                if (isSystem) {
+                  if (isSystem) {
+                    return (
+                      <div key={i} className="flex justify-center my-2">
+                        <span className="bg-gray-200 text-gray-600 text-[11px] px-3 py-1 rounded-full">
+                          {msg.text}
+                        </span>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div key={i} className="flex justify-center my-2">
-                      <span className="bg-gray-200 text-gray-600 text-[11px] px-3 py-1 rounded-full">
-                        {msg.text}
+                    <div
+                      key={i}
+                      className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                    >
+                      <span className="text-[10px] text-gray-400 mb-1">
+                        {isMe ? "나" : msg.sender}
                       </span>
+                      <div
+                        className={`px-4 py-2 rounded-xl text-body4 shadow-sm max-w-[85%] break-words ${isMe ? "bg-primary-600 text-white rounded-tr-none" : "bg-gray-100 text-gray-800 rounded-tl-none"}`}
+                      >
+                        {msg.text}
+                      </div>
                     </div>
                   );
-                }
-
-                return (
-                  <div
-                    key={i}
-                    className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
-                  >
-                    <span className="text-[10px] text-gray-400 mb-1">
-                      {isMe ? "나" : msg.sender}
-                    </span>
-                    <div
-                      className={`px-4 py-2 rounded-xl text-body4 shadow-sm max-w-[85%] break-words ${isMe ? "bg-primary-600 text-white rounded-tr-none" : "bg-gray-100 text-gray-800 rounded-tl-none"}`}
-                    >
-                      {msg.text}
-                    </div>
-                  </div>
-                );
-              })}
+                })}
               <div ref={chatEndRef} />
             </div>
           </div>
