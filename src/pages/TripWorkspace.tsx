@@ -169,7 +169,7 @@ export default function TripWorkspace() {
   const lastSentTime = useRef(0); // 전송 빈도 조절용
   const [lockedBy, setLockedBy] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
+  const [speakingUsers, setSpeakingUsers] = useState<string[]>([]);
 
   // --- [Refs] ---
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -490,25 +490,25 @@ export default function TripWorkspace() {
           myLoginId,
         );
 
-        // 🌟 1. 볼륨 감지기 켜기 (200ms 마다 업데이트)
         agoraClient.current.enableAudioVolumeIndicator();
 
-        // 🌟 2. 볼륨 데이터를 받아서 말하는 사람 걸러내기
+        //볼륨 데이터를 받아서 말하는 사람 걸러내기
         agoraClient.current.on("volume-indicator", (volumes) => {
-          const activeSpeakers = new Set<string>();
+          //(디버깅용)
+          // 상대방 컴퓨터에 내 목소리가 레벨 몇(level)으로 도착하는지 숫자로 볼 수 있습니다
+          // console.log("🎤 수신된 볼륨 데이터:", volumes);
 
-          volumes.forEach((vol) => {
-            // 볼륨 레벨이 5 이상일 때만 '말하는 중'으로 판정 (잡음 필터링)
-            if (vol.level > 5) {
-              // 본인의 uid는 0으로 들어오는 경우가 있으므로 예외 처리
-              const speakerUid = String(vol.uid === 0 ? myLoginId : vol.uid);
-              activeSpeakers.add(speakerUid);
-            }
-          });
+          const activeSpeakers = volumes
+            // 상대방의 미세한 소리 수신 데이터 캐치
+            .filter((vol) => vol.level > 20)
+            .map((vol) => {
+              // 본인의 uid는 0이나 빈 문자열로 올 수 있으므로 예외 처리
+              if (vol.uid === 0 || vol.uid === "") return String(myLoginId);
+              return String(vol.uid);
+            });
 
           setSpeakingUsers(activeSpeakers);
         });
-
         //Web SDK에서는 createDataStream 과정이 필요 없으므로 위의 블록은 깔끔하게 삭제했습니다.
 
         (agoraClient.current as any).on(
@@ -1072,15 +1072,24 @@ export default function TripWorkspace() {
         <div className="absolute top-[80px] right-[40px] z-[100] flex gap-4">
           {participants.map((p) => {
             const isMe = String(p.id) === String(myLoginId);
+
+            //이 유저가 현재 말하고 있는지 확인
+            const isSpeaking = speakingUsers.includes(String(p.id));
             return (
               <div
                 key={p.id}
-                // 👇 onClick 이벤트와 클릭 가능한 마우스 포인터, 호버 시 살짝 커지는 애니메이션을 추가했습니다.
                 onClick={() => handleProfileClick(p.id)}
                 className={`relative group flex flex-col items-center gap-2 transition-transform ${isMe ? "" : "cursor-pointer hover:scale-110"}`}
               >
                 <div
-                  className={`w-16 h-16 rounded-full border-2 shadow-lg bg-gray-300 flex items-center justify-center overflow-hidden relative transition-all ${isMe ? "border-primary-600 ring-4 ring-primary-100" : "border-white hover:border-primary-400"}`}
+                  // 🌟 말하고 있을 때(isSpeaking) 디스코드처럼 초록색 테두리와 펄스(pulse) 애니메이션 부여!
+                  className={`w-16 h-16 rounded-full border-2 bg-gray-300 flex items-center justify-center overflow-hidden relative transition-all ${
+                    isSpeaking
+                      ? "border-green-400 ring-4 ring-green-400/40 shadow-[0_0_15px_rgba(74,222,128,0.6)] scale-105"
+                      : isMe
+                        ? "border-primary-600 ring-4 ring-primary-100 shadow-lg"
+                        : "border-white hover:border-primary-400 shadow-lg"
+                  }`}
                 >
                   {USER_ICON}
                   {p.isMuted && (
