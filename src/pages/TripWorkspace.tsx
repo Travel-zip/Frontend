@@ -169,6 +169,7 @@ export default function TripWorkspace() {
   const lastSentTime = useRef(0); // 전송 빈도 조절용
   const [lockedBy, setLockedBy] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
 
   // --- [Refs] ---
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -489,7 +490,26 @@ export default function TripWorkspace() {
           myLoginId,
         );
 
-        // 🌟 1. Web SDK에서는 createDataStream 과정이 필요 없으므로 위의 블록은 깔끔하게 삭제했습니다.
+        // 🌟 1. 볼륨 감지기 켜기 (200ms 마다 업데이트)
+        agoraClient.current.enableAudioVolumeIndicator();
+
+        // 🌟 2. 볼륨 데이터를 받아서 말하는 사람 걸러내기
+        agoraClient.current.on("volume-indicator", (volumes) => {
+          const activeSpeakers = new Set<string>();
+
+          volumes.forEach((vol) => {
+            // 볼륨 레벨이 5 이상일 때만 '말하는 중'으로 판정 (잡음 필터링)
+            if (vol.level > 5) {
+              // 본인의 uid는 0으로 들어오는 경우가 있으므로 예외 처리
+              const speakerUid = String(vol.uid === 0 ? myLoginId : vol.uid);
+              activeSpeakers.add(speakerUid);
+            }
+          });
+
+          setSpeakingUsers(activeSpeakers);
+        });
+
+        //Web SDK에서는 createDataStream 과정이 필요 없으므로 위의 블록은 깔끔하게 삭제했습니다.
 
         (agoraClient.current as any).on(
           "stream-message",
@@ -691,7 +711,9 @@ export default function TripWorkspace() {
     const bounds = new kakao.maps.LatLngBounds();
     let hasBounds = false;
 
-    // 1. 일정 렌더링
+    // ==========================================
+    // 1. AI 일정 렌더링 (번호가 적힌 예쁜 커스텀 핀)
+    // ==========================================
     if (planData.length > 0) {
       const days = Array.from(
         new Set(planData.map((p) => `${p.month}/${p.day}`)),
@@ -709,32 +731,57 @@ export default function TripWorkspace() {
         bounds.extend(pos);
         hasBounds = true;
 
-        const marker = new kakao.maps.Marker({
-          position: pos,
-          map: mapInstance.current,
-          title: item.place,
-        });
-        markersRef.current.push(marker);
+        // 해당 일정의 요일 인덱스를 구해서 선(Polyline) 색상과 깔맞춤합니다!
+        const dayIndex = days.indexOf(`${item.month}/${item.day}`);
+        const pinColor =
+          selectedDay === null || viewMode === "map" || showSearchUI
+            ? DAY_COLORS[dayIndex % DAY_COLORS.length]
+            : "#1A40FF";
 
-        kakao.maps.event.addListener(marker, "click", () => {
+        // 🌟 촌스러운 기본 마커 대신 예쁜 HTML/CSS 커스텀 마커 생성
+        const content = document.createElement("div");
+        content.innerHTML = `
+          <div style="position:relative; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer; transform:translateY(-10px);">
+            <div style="background-color:${pinColor}; width:32px; height:32px; border-radius:50%; display:flex; justify-content:center; align-items:center; border:2.5px solid white; box-shadow:0 3px 6px rgba(0,0,0,0.3); z-index:2; position:relative;">
+              <span style="color:white; font-weight:900; font-size:14px; font-family:sans-serif;">${idx + 1}</span>
+            </div>
+            <div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid ${pinColor}; margin-top:-2px; z-index:1; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));"></div>
+          </div>
+        `;
+
+        // 카카오 CustomOverlay로 지도에 부착
+        const customMarker = new kakao.maps.CustomOverlay({
+          position: pos,
+          content: content,
+          map: mapInstance.current,
+          yAnchor: 1, // 마커의 꼬리 부분이 정확히 좌표에 닿도록 설정
+          zIndex: 10,
+        });
+
+        markersRef.current.push(customMarker);
+
+        // 마커 클릭 시 InfoWindow 열기
+        content.onclick = () => {
           const prefix = selectedDay === null ? "" : `<b>${idx + 1}.</b> `;
 
-          // 🌟 백엔드가 준 이미지가 있으면 팝업에 추가!
           const imageHtml = item.imageUrl
             ? `<img src="${item.imageUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px;" alt="${item.place}" />`
             : ``;
 
-          const content = `<div style="padding:15px; font-size:14px; width:220px;">
+          const contentHtml = `<div style="padding:15px; font-size:14px; width:220px; border-radius:12px;">
             ${imageHtml}
-            <div style="font-size:15px; margin-bottom:4px;">${prefix}<b>${item.place}</b></div>
-            <div style="color:#666; font-size:12px; line-height:1.4;">${item.memo}</div>
+            <div style="font-size:15px; margin-bottom:4px; font-weight:bold; color:#1f2937;">${prefix}${item.place}</div>
+            <div style="color:#6b7280; font-size:12px; line-height:1.4;">${item.memo}</div>
           </div>`;
 
-          infoWindowInstance.current.setContent(content);
-          infoWindowInstance.current.open(mapInstance.current, marker);
-        });
+          // CustomOverlay는 이 방식으로 인포윈도우를 띄워야 합니다.
+          infoWindowInstance.current.setContent(contentHtml);
+          infoWindowInstance.current.setPosition(pos);
+          infoWindowInstance.current.setMap(mapInstance.current);
+        };
       });
 
+      // 선(Polyline) 그리기 로직 (기존과 동일)
       days.forEach((dateString, dayIndex) => {
         if (
           selectedDay !== null &&
@@ -765,7 +812,9 @@ export default function TripWorkspace() {
       });
     }
 
-    // 2. 검색 결과 렌더링
+    // ==========================================
+    // 2. 검색 결과 렌더링 (세련된 기본 핀으로 교체)
+    // ==========================================
     if ((viewMode === "map" || showSearchUI) && searchResults.length > 0) {
       const newPlaces = searchResults.filter(
         (p) =>
@@ -774,6 +823,18 @@ export default function TripWorkspace() {
           ),
       );
       allFoundPlacesRef.current = [...allFoundPlacesRef.current, ...newPlaces];
+
+      // 🌟 검색 마커용 커스텀 SVG 아이콘 (클러스터링 호환용)
+      const searchMarkerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="38" viewBox="0 0 36 42"><path d="M18 0C8.059 0 0 8.059 0 18c0 10.5 18 24 18 24s18-13.5 18-24C36 8.059 27.941 0 18 0zm0 25c-3.866 0-7-3.134-7-7s3.134-7 7-7 7 3.134 7 7-3.134 7-7 7z" fill="#4967fe" stroke="white" stroke-width="2.5"/><circle cx="18" cy="18" r="4" fill="white"/></svg>`;
+      const searchMarkerImageSrc = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(searchMarkerSvg)}`;
+      const imageSize = new kakao.maps.Size(32, 38);
+      const markerImage = new kakao.maps.MarkerImage(
+        searchMarkerImageSrc,
+        imageSize,
+        {
+          offset: new kakao.maps.Point(16, 38),
+        },
+      );
 
       searchResults.forEach((place) => {
         const safeId =
@@ -789,11 +850,15 @@ export default function TripWorkspace() {
         bounds.extend(pos);
         hasBounds = true;
 
-        const marker = new kakao.maps.Marker({ position: pos });
+        const marker = new kakao.maps.Marker({
+          position: pos,
+          image: markerImage, // 🌟 여기서 커스텀 이미지를 적용!
+        });
+
         kakao.maps.event.addListener(marker, "click", () => {
           const content = `<div style="padding:15px; min-width:180px;">
-            <h4 style="margin:0 0 5px 0; font-size:14px; font-weight:bold;">${place.title}</h4>
-            <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:6px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px;">장소 추가하기</button>
+            <h4 style="margin:0 0 5px 0; font-size:14px; font-weight:bold; color:#1f2937;">${place.title}</h4>
+            <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px; transition:0.2s;">장소 추가하기</button>
           </div>`;
           infoWindowInstance.current.setContent(content);
           infoWindowInstance.current.open(mapInstance.current, marker);
