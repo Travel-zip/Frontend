@@ -185,6 +185,7 @@ export default function TripWorkspace() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const allFoundPlacesRef = useRef<any[]>([]);
   const cursorOverlaysRef = useRef<{ [uid: string]: any }>({});
+  const autoFitBoundsRef = useRef<boolean>(true);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -225,10 +226,12 @@ export default function TripWorkspace() {
       if (res.data && res.data.items && res.data.items.length > 0) {
         setPlanData(res.data.items);
         setViewMode("plan");
+        autoFitBoundsRef.current = true;
         console.log("✅ 저장된 일정을 성공적으로 불러왔습니다!");
       } else if (res && res.items && res.items.length > 0) {
         setPlanData(res.items);
         setViewMode("plan");
+        autoFitBoundsRef.current = true;
         console.log("✅ 저장된 일정을 성공적으로 불러왔습니다!");
       } else {
         console.log("아직 저장된 일정이 없습니다.");
@@ -293,6 +296,7 @@ export default function TripWorkspace() {
       setViewMode("plan");
       setShowSearchUI(false);
       setSelectedPlaces([]);
+      autoFitBoundsRef.current = true;
       console.log("🔥 [발송 직전 웹소켓 상태 확인] ws.current:", ws.current);
       console.log(
         "🔥 [상태 코드] readyState:",
@@ -883,8 +887,9 @@ export default function TripWorkspace() {
       });
     }
 
-    if (hasBounds) {
+    if (hasBounds && autoFitBoundsRef.current) {
       mapInstance.current.setBounds(bounds);
+      autoFitBoundsRef.current = false; // 이동 후 즉시 플래그 꺼서 자유롭게 볼 수 있게 만듦
     }
   }, [
     isMapLoaded,
@@ -1053,9 +1058,10 @@ export default function TripWorkspace() {
           mode="plan"
           planData={planData}
           selectedDay={selectedDay}
-          onDaySelect={(day) =>
-            setSelectedDay((prev) => (prev === day ? null : day))
-          }
+          onDaySelect={(day) => {
+            setSelectedDay((prev) => (prev === day ? null : day));
+            autoFitBoundsRef.current = true;
+          }}
           listTitle="AI 추천 일정"
           bottomActions={[
             {
