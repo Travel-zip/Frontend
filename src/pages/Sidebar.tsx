@@ -3,6 +3,16 @@ import profileImg from "../assets/icons/profile.svg";
 import Modal from "../components/common/Modal";
 import { type SearchPlace } from "../types/api";
 
+// 🌟 지도와 동일한 테마 색상 배열 추가!
+const DAY_COLORS = [
+  "#1A40FF",
+  "#FF4081",
+  "#00C853",
+  "#FFAB00",
+  "#9C27B0",
+  "#FF5722",
+];
+
 // 하단 액션 버튼을 위한 타입 정의
 export interface SidebarAction {
   label: string;
@@ -152,7 +162,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     </svg>
   );
 
-  //color를 받을 수 있게 타입 정의
   const DayIcon = ({ color = "#7D7D8E" }: { color?: string }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -305,26 +314,44 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex flex-col gap-8 w-full pb-10">
                 {groupedPlans.map((group) => {
                   const isSelected = selectedDay === group.dayNum;
+                  // 🌟 해당 일차에 맞는 테마 색상 추출!
+                  const themeColor =
+                    DAY_COLORS[(group.dayNum - 1) % DAY_COLORS.length];
+
                   return (
                     <div key={group.dayNum} className="flex flex-col gap-4">
-                      {/* N일차 헤더 스타일 변경 */}
+                      {/* 🌟 N일차 헤더: 선택 시 동기화된 테마 색상으로 배경 변경 */}
                       <div
                         onClick={() => onDaySelect?.(group.dayNum)}
-                        className={`flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all ${isSelected ? "bg-primary-700 text-white shadow-lg" : "hover:bg-white text-gray-800"}`}
+                        className={`flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all ${isSelected ? "text-white shadow-lg" : "hover:bg-white text-gray-800"}`}
+                        style={{
+                          backgroundColor: isSelected
+                            ? themeColor
+                            : "transparent",
+                        }}
                       >
-                        <DayIcon color={isSelected ? "white" : "#4967fe"} />
+                        {/* 🌟 캐리어 아이콘: 선택 시 흰색, 비선택 시 테마 색상 */}
+                        <DayIcon color={isSelected ? "white" : themeColor} />
                         <span className="text-h5 font-bold">
                           {group.dayNum}일차
                         </span>
                       </div>
 
-                      <div className="flex flex-col gap-3 pl-6 border-l-2 border-primary-200 ml-6">
+                      {/* 🌟 왼쪽 타임라인 선: 테마 색상 적용 */}
+                      <div
+                        className="flex flex-col gap-3 pl-6 border-l-2 ml-6"
+                        style={{ borderColor: themeColor }}
+                      >
                         {group.items.map((item, idx) => (
                           <div
                             key={idx}
                             className="relative flex flex-col gap-1 pb-4"
                           >
-                            <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-primary-500 border-2 border-white" />
+                            {/* 🌟 아이템 왼쪽의 동그란 점(마커): 테마 색상 적용 */}
+                            <div
+                              className="absolute -left-[31px] top-1 w-3 h-3 rounded-full border-2 border-white"
+                              style={{ backgroundColor: themeColor }}
+                            />
                             <span className="text-body3 font-bold text-gray-800">
                               {item.place}
                             </span>
