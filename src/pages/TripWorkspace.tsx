@@ -636,6 +636,10 @@ export default function TripWorkspace() {
         });
         infoWindowInstance.current = new kakao.maps.InfoWindow({ zIndex: 1 });
         setIsMapLoaded(true);
+        kakao.maps.event.addListener(mapInstance.current, "click", () => {
+          infoWindowInstance.current.close(); // 검색 결과 핀 닫기
+          infoWindowInstance.current.setMap(null); // AI 일정 커스텀 핀 닫기
+        });
 
         // 🌟 지도가 로드된 직후, 카카오 지도 마우스 이벤트 리스너 등록!
         kakao.maps.event.addListener(
@@ -856,10 +860,22 @@ export default function TripWorkspace() {
         });
 
         kakao.maps.event.addListener(marker, "click", () => {
-          const content = `<div style="padding:15px; min-width:180px;">
-            <h4 style="margin:0 0 5px 0; font-size:14px; font-weight:bold; color:#1f2937;">${place.title}</h4>
+          // 🌟 검색 결과 데이터에서 사진 URL 뽑아오기 (Tour API는 주로 firstimage 필드에 사진이 있습니다)
+          const imageUrl =
+            place.firstimage || place.imageUrl || place.firstImage || "";
+
+          // 🌟 사진이 있으면 img 태그 생성, 없으면 빈 문자열
+          const imageHtml = imageUrl
+            ? `<img src="${imageUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px;" alt="${place.title}" />`
+            : ``;
+
+          // 🌟 AI 일정 핀과 동일한 너비(220px)와 스타일을 주어 디자인을 통일합니다!
+          const content = `<div style="padding:15px; font-size:14px; width:220px; border-radius:12px; box-sizing:border-box;">
+            ${imageHtml}
+            <h4 style="margin:0 0 5px 0; font-size:15px; font-weight:bold; color:#1f2937; line-height:1.3; word-break:keep-all;">${place.title}</h4>
             <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px; transition:0.2s;">장소 추가하기</button>
           </div>`;
+
           infoWindowInstance.current.setContent(content);
           infoWindowInstance.current.open(mapInstance.current, marker);
         });
