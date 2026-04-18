@@ -9,6 +9,9 @@ export interface PlanData {
   participants: string[];
   image: string;
   country?: string;
+  // 🌟 기존 카드에도 백엔드에서 날짜를 보내준다면 사용할 수 있도록 추가해 둡니다.
+  startDate?: string;
+  endDate?: string;
 }
 
 interface PlanCardProps {
@@ -53,10 +56,19 @@ const PlanCard: React.FC<PlanCardProps> = ({
     }
   };
 
-  // 카드 클릭 시 지도 페이지로 이동 (버튼 클릭 시엔 방지)
+  // 🌟 에러 해결된 카드 클릭 함수!
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button") || isEditing) return;
-    navigate(`/map?roomId=${data.id}`);
+
+    // 1. 방 번호는 현재 카드의 아이디(data.id)를 사용합니다.
+    let targetUrl = `/map?roomId=${data.id}`;
+
+    // 2. 만약 기존 카드 데이터에 시작일/종료일 정보가 있다면 같이 주소에 붙여줍니다.
+    if (data.startDate && data.endDate) {
+      targetUrl += `&start=${data.startDate}&end=${data.endDate}`;
+    }
+
+    navigate(targetUrl);
   };
 
   return (
@@ -199,7 +211,6 @@ const PlanCard: React.FC<PlanCardProps> = ({
         <div className="flex justify-between items-center w-full">
           <div className="flex items-center">
             <div className="flex -space-x-[18px]">
-              {/* ✅ 안전장치: participants가 없으면 빈 배열 취급 */}
               {(data.participants || []).slice(0, 6).map((src, i) => (
                 <img
                   key={i}
@@ -209,7 +220,6 @@ const PlanCard: React.FC<PlanCardProps> = ({
                 />
               ))}
             </div>
-            {/* ✅ 안전장치: length를 읽을 때도 에러 안 나게 처리 */}
             {(data.participants || []).length > 6 && (
               <span className="ml-3 text-[14px] text-gray-400 font-medium">
                 +{(data.participants || []).length - 6}

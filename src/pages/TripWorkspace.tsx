@@ -129,10 +129,39 @@ const DAY_COLORS = [
   "#FF5722",
 ];
 
+// 🌟 협업 툴 전용 예쁜 컬러 팔레트
+const USER_COLORS = [
+  "#FF3B30",
+  "#FF9500",
+  "#FFCC00",
+  "#4CD964",
+  "#5AC8FA",
+  "#007AFF",
+  "#5856D6",
+  "#FF2D55",
+  "#E56CE5",
+  "#1ABC9C",
+  "#E74C3C",
+  "#34495E",
+];
+
+// 🌟 유저 아이디(UID)를 바탕으로 고유한 색상을 뽑아주는 함수
+const getUserColor = (uid: string | number) => {
+  let hash = 0;
+  const strUid = String(uid);
+  for (let i = 0; i < strUid.length; i++) {
+    hash = strUid.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
+};
+
 export default function TripWorkspace() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const currentRoomId = searchParams.get("roomId");
+
+  const urlStartDate = searchParams.get("start");
+  const urlEndDate = searchParams.get("end");
 
   useEffect(() => {
     if (!currentRoomId) {
@@ -272,16 +301,37 @@ export default function TripWorkspace() {
 
     setIsLoading(true);
     broadcastLock(true);
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(
+        JSON.stringify({ type: "START_PLANNING", roomId: safeRoomId }),
+      );
+    }
     try {
+      // 🌟 [핵심] URL에 날짜가 있으면, AI에게 내리는 "강력한 비밀 지령"을 만듭니다.
+      let secretPrompt = "";
+      if (urlStartDate && urlEndDate) {
+        // 날짜 문자열(예: 2026-04-20)에서 월/일만 확실하게 뽑아냅니다.
+        const startMonth = new Date(urlStartDate).getMonth() + 1;
+        const startDay = new Date(urlStartDate).getDate();
+        const endMonth = new Date(urlEndDate).getMonth() + 1;
+        const endDay = new Date(urlEndDate).getDate();
+
+        // AI가 절대 무시할 수 없도록 협박성 프롬프트를 작성합니다.
+        secretPrompt = `[🔥절대규칙: 이 여행은 ${startMonth}월 ${startDay}일부터 ${endMonth}월 ${endDay}일까지입니다. 무조건 이 날짜들로만 JSON의 "month"와 "day" 값을 분배해서 작성하세요. 임의의 날짜를 생성하면 안 됩니다!!] `;
+      }
+
       const requestData = {
         roomId: safeRoomId,
-        selectedPlaceName: allPlacesToGenerate.join(", "),
+        // 🌟 장소들 리스트 맨 앞에 비밀 지령을 찰싹 붙여서 보냅니다.
+        selectedPlaceName: secretPrompt + allPlacesToGenerate.join(", "),
         selectedRestaurantName: "",
         selectedStayName: "",
       };
 
-      const res: any = await travelApi.generatePlan(requestData as any);
+      // 💡 [디버깅용] 개발자 도구(F12) 콘솔에서 이 텍스트가 제대로 만들어졌는지 꼭 확인해 보세요!
+      console.log("🔥 AI에게 전송될 텍스트:", requestData.selectedPlaceName);
 
+      const res: any = await travelApi.generatePlan(requestData as any);
       let newPlanItems: PlanItem[] = [];
       if (res && res.data && res.data.items) {
         newPlanItems = res.data.items;
@@ -528,13 +578,17 @@ export default function TripWorkspace() {
 
                 // 1. 해당 유저의 커서 오버레이가 아직 없다면 새로 생성
                 if (!cursorOverlaysRef.current[uid]) {
+                  // 👇 여기서 유저 고유 컬러를 뽑아냅니다!
+                  const userColor = getUserColor(uid);
+
                   const content = document.createElement("div");
+                  // 👇 커서 SVG의 fill과 이름표 background-color를 ${userColor}로 바꿨습니다.
                   content.innerHTML = `
                     <div style="position: absolute; pointer-events: none; z-index: 50; display: flex; flex-direction: column; items-center; transform: translate(-50%, -50%);">
                       <svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-                        <path d="M5.65376 2.00018L21.4397 18.2323C22.6865 19.5142 21.778 21.6565 19.9678 21.6565H13.6828C13.1678 21.6565 12.6781 21.8797 12.3364 22.2694L7.5447 27.7323C6.31475 29.1342 3.99951 28.2618 3.99951 26.4014V3.90483C3.99951 2.02298 6.32623 1.11584 7.56459 2.47648L5.65376 2.00018Z" fill="#FF4081" stroke="white" stroke-width="2" />
+                        <path d="M5.65376 2.00018L21.4397 18.2323C22.6865 19.5142 21.778 21.6565 19.9678 21.6565H13.6828C13.1678 21.6565 12.6781 21.8797 12.3364 22.2694L7.5447 27.7323C6.31475 29.1342 3.99951 28.2618 3.99951 26.4014V3.90483C3.99951 2.02298 6.32623 1.11584 7.56459 2.47648L5.65376 2.00018Z" fill="${userColor}" stroke="white" stroke-width="2" />
                       </svg>
-                      <div style="background-color: #FF4081; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; margin-top: 4px;">
+                      <div style="background-color: ${userColor}; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; margin-top: 4px;">
                         User ${uid}
                       </div>
                     </div>
@@ -1094,26 +1148,30 @@ export default function TripWorkspace() {
         <div className="absolute top-[80px] right-[40px] z-[100] flex gap-4">
           {participants.map((p) => {
             const isMe = String(p.id) === String(myLoginId);
-
-            //이 유저가 현재 말하고 있는지 확인
             const isSpeaking = speakingUsers.includes(String(p.id));
+
+            // 🌟 1. 이 사람의 고유한 컬러 추출!
+            const userColor = getUserColor(p.id);
+
             return (
               <div
                 key={p.id}
                 onClick={() => handleProfileClick(p.id)}
-                className={`relative group flex flex-col items-center gap-2 transition-transform ${isMe ? "" : "cursor-pointer hover:scale-110"}`}
+                className={`relative group flex flex-col items-center gap-2 transition-transform duration-75 cursor-pointer hover:scale-110`}
               >
                 <div
-                  // 🌟 말하고 있을 때(isSpeaking) 디스코드처럼 초록색 테두리와 펄스(pulse) 애니메이션 부여!
-                  className={`w-16 h-16 rounded-full border-2 bg-gray-300 flex items-center justify-center overflow-hidden relative transition-all ${
-                    isSpeaking
-                      ? "border-green-400 ring-4 ring-green-400/40 shadow-[0_0_15px_rgba(74,222,128,0.6)] scale-105"
-                      : isMe
-                        ? "border-primary-600 ring-4 ring-primary-100 shadow-lg"
-                        : "border-white hover:border-primary-400 shadow-lg"
+                  // 🌟 2. 바탕을 고유 컬러로 칠하고, 말할 때 그 색깔 빛이 뿜어져 나옵니다 (box-shadow)
+                  className={`w-16 h-16 rounded-full border-2 border-white flex items-center justify-center overflow-hidden relative transition-all duration-75 z-10 ${
+                    isSpeaking ? "scale-110" : ""
                   }`}
+                  style={{
+                    backgroundColor: userColor,
+                    boxShadow: isSpeaking
+                      ? `0 0 0 3px white, 0 0 20px 6px ${userColor}`
+                      : "0 4px 6px rgba(0,0,0,0.1)",
+                  }}
                 >
-                  {USER_ICON}
+                  <div className="text-white opacity-90">{USER_ICON}</div>
                   {p.isMuted && (
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
                       <div className="scale-50 opacity-80">
@@ -1122,8 +1180,16 @@ export default function TripWorkspace() {
                     </div>
                   )}
                 </div>
+
+                {/* 🌟 3. 이름표 뱃지도 고유 컬러로 깔맞춤! */}
                 <div
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm ${isMe ? "bg-primary-600 text-white" : "bg-white/80 text-gray-600 group-hover:bg-primary-50 group-hover:text-primary-700"}`}
+                  className="px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm text-white z-20 transition-all duration-75"
+                  style={{
+                    backgroundColor: userColor,
+                    boxShadow: isSpeaking
+                      ? `0 0 10px ${userColor}80`
+                      : "0 2px 4px rgba(0,0,0,0.1)",
+                  }}
                 >
                   {p.name} {isMe && " (나)"}
                 </div>
