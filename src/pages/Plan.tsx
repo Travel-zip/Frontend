@@ -153,7 +153,7 @@ const Plan: React.FC<PlanProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="예: 제주도 3박 4일"
+                  placeholder="예: jeju 3days"
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-all text-body3"

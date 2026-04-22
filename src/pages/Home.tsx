@@ -190,14 +190,14 @@ export default function Home() {
   };
 
   const homeActions: SidebarAction[] = [
-    {
-      label: "휴지통",
-      icon: deleteIcon,
-      onClick: () => handleDeleteRoom(),
-      modalTitle: "일정을 삭제하시겠어요?",
-      modalImage: TrashImg,
-      hoverColorClass: "group-hover:text-error-default",
-    },
+    // {
+    //   label: "휴지통",
+    //   icon: deleteIcon,
+    //   onClick: () => handleDeleteRoom(),
+    //   modalTitle: "일정을 삭제하시겠어요?",
+    //   modalImage: TrashImg,
+    //   hoverColorClass: "group-hover:text-error-default",
+    // },
     {
       label: "로그아웃",
       icon: exitIcon,
@@ -216,7 +216,22 @@ export default function Home() {
       <Sidebar
         rooms={plans.filter((p) => p.isFavorite)}
         currentRoomId={String(currentRoomId)}
-        onRoomSelect={(id) => setCurrentRoomId(id)}
+        // 🌟 [수정] 아이디만 바꾸는 게 아니라, 해당 방의 정보를 찾아서 바로 입장합니다!
+        onRoomSelect={(id) => {
+          // 1. 전체 플랜 목록에서 클릭한 방의 데이터를 찾습니다.
+          const targetRoom = plans.find((p) => String(p.id) === String(id));
+
+          if (targetRoom) {
+            // 2. 방 아이디와 날짜 정보를 조합해서 URL을 만듭니다.
+            let targetUrl = `/map?roomId=${targetRoom.id}`;
+            if (targetRoom.startDate && targetRoom.endDate) {
+              targetUrl += `&start=${targetRoom.startDate}&end=${targetRoom.endDate}`;
+            }
+
+            // 3. 바로 해당 방으로 이동!
+            navigate(targetUrl);
+          }
+        }}
         userName={userLoginId}
         bottomActions={homeActions}
         listTitle="즐겨 찾기"

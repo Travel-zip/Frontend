@@ -21,6 +21,7 @@ export interface SidebarAction {
   modalTitle?: string;
   modalImage?: string;
   listTitle?: string;
+  dateRange?: string;
 }
 
 // AI 일정 데이터 타입
@@ -50,6 +51,8 @@ export interface SidebarProps {
   mode?: "list" | "plan";
   selectedDay?: number | null;
   onDaySelect?: (dayNum: number) => void;
+  dateRange?: string;
+  onPlaceClick?: (lat: number, lng: number) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -66,10 +69,15 @@ const Sidebar: React.FC<SidebarProps> = ({
   mode = "list",
   selectedDay = null,
   onDaySelect = () => {},
+  dateRange = "",
+  onPlaceClick = () => {},
 }) => {
   const [isExpanded, setIsExpanded] = useState(mode === "plan" ? true : false);
   const [activeAction, setActiveAction] = useState<SidebarAction | null>(null);
   const [displayUserName, setDisplayUserName] = useState("글미");
+  const uniqueDays = Array.from(
+    new Set(planData.map((p) => `${p.month}/${p.day}`)),
+  );
 
   useEffect(() => {
     const storedName = localStorage.getItem("loginId");
@@ -143,7 +151,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       className={`flex flex-col border-r border-[#8CA2FF]/30 shadow-[4px_0_24px_rgba(26,64,255,0.05)] transition-all duration-300 ease-in-out h-screen overflow-hidden shrink-0 ${
         isExpanded ? "w-[320px]" : "w-[88px]"
       }`}
-      // 🌟 바로 여기에 상준님의 시그니처 색상을 인라인으로 꽂아 넣었습니다!
       style={{ backgroundColor: "var(--Primary-100, #E5EAFF)" }}
     >
       {/* 🌟 헤더 영역 (프로필 제거, 토스 스타일 인사말) */}
@@ -196,13 +203,21 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide flex flex-col pt-2">
         {/* 리스트 제목 */}
         {isExpanded && (
-          <div className="px-7 mb-3 animate-fadeIn">
+          <div className="px-7 mb-3 animate-fadeIn flex flex-col gap-1.5">
             <span className="text-[13px] text-gray-400 font-bold tracking-tight">
               {mode === "plan" ? "AI 추천 일정" : listTitle}
             </span>
+
+            {/* 👇 🌟 여행 날짜가 있으면 예쁜 배지로 띄워줍니다! 👇 */}
+            {dateRange && mode !== "plan" && (
+              <div className="flex items-center gap-1.5 text-primary-600 bg-primary-50 w-fit px-2.5 py-1 rounded-md mt-1">
+                <span className="text-[12px] font-extrabold tracking-tight">
+                  🗓️ {dateRange}
+                </span>
+              </div>
+            )}
           </div>
         )}
-
         {/* 🌟 모드 1: 방 목록 (List) */}
         {mode === "list" && (
           <div className="flex flex-col gap-1 w-full px-3 pb-6">
@@ -250,7 +265,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       </span>
                     )}
                   </div>
-                  {isExpanded && onRemovePlace && (
+                  {/* {isExpanded && onRemovePlace && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -271,8 +286,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                       </svg>
-                    </button>
-                  )}
+                    </button> */}
+                  {/* )} */}
                 </div>
               );
             })}
@@ -300,17 +315,22 @@ const Sidebar: React.FC<SidebarProps> = ({
                     style={{ backgroundColor: isSelected ? themeColor : "" }}
                   >
                     <span className="text-[14px] font-bold tracking-tight">
-                      {group.dayNum}일차
+                      {group.dayNum}일차 ({group.date})
                     </span>
                   </div>
 
                   {/* 🌟 매우 깔끔해진 세로 타임라인 선 */}
                   <div className="flex flex-col gap-6 pl-4 ml-2 border-l-2 border-gray-100 relative">
                     {group.items.map((item, idx) => (
-                      <div key={idx} className="relative flex flex-col gap-1">
+                      <div
+                        key={idx}
+                        // 👇 🌟 클릭 이벤트 추가 및 hover(마우스 올림) 효과 추가!
+                        className="relative flex flex-col gap-1 cursor-pointer group"
+                        onClick={() => onPlaceClick(item.lat, item.lng)}
+                      >
                         {/* 타임라인 원형 포인트 */}
                         <div
-                          className="absolute -left-[22px] top-1.5 w-[11px] h-[11px] rounded-full border-[2.5px] border-white shadow-sm"
+                          className="absolute -left-[22px] top-1.5 w-[11px] h-[11px] rounded-full border-[2.5px] border-white shadow-sm group-hover:scale-125 transition-transform duration-200"
                           style={{
                             backgroundColor: isSelected
                               ? themeColor
@@ -318,7 +338,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                           }}
                         />
                         <span
-                          className={`text-[15px] font-bold tracking-tight ${isSelected ? "text-gray-900" : "text-gray-600"}`}
+                          // 👇 🌟 마우스 올리면 글자가 파란색(primary-600)으로 변함!
+                          className={`text-[15px] font-bold tracking-tight transition-colors duration-200 group-hover:text-primary-600 ${isSelected ? "text-gray-900" : "text-gray-600"}`}
                         >
                           {item.place}
                         </span>

@@ -213,6 +213,14 @@ export default function TripWorkspace() {
 
   const urlStartDate = searchParams.get("start");
   const urlEndDate = searchParams.get("end");
+  const formatDateStr = (dateStr: string | null) => {
+    if (!dateStr) return "";
+    return dateStr.replace(/-/g, ".");
+  };
+  const displayDateRange =
+    urlStartDate && urlEndDate
+      ? `${formatDateStr(urlStartDate)} ~ ${formatDateStr(urlEndDate)}`
+      : "";
 
   // 🌟 [복구완료] URL 파라미터나 방 아이디(jeju-12345)에서 "jeju" 완벽 추출!
   let initialTitle = "여행";
@@ -401,19 +409,15 @@ export default function TripWorkspace() {
       setSelectedPlaces([]);
       autoFitBoundsRef.current = true;
 
-      // 🌟 2. AI가 일정을 다 짰으니, 이제 친구들에게 통째로 쏴줍니다!
-      // TS 에러(2367) 방지를 위해 WebSocket.OPEN 대신 숫자 1 사용
-      if (ws.current?.readyState === 1) {
-        ws.current.send(
-          JSON.stringify({
-            type: "CHAT",
-            roomId: safeRoomId,
-            sender: myLoginId,
-            // 내가 방금 받은 AI 일정(newPlanItems)을 찰싹 붙여서 통째로 던져줌!
-            text: "[[PLAN_UPDATED]]" + JSON.stringify(newPlanItems),
-          }),
+      // 🌟 1. 채팅 웹소켓 대신 '아고라 데이터 채널(직통)'을 사용합니다! (DB 에러 절대 안남)
+      if (agoraClient.current) {
+        const payload = JSON.stringify({ type: "PLAN_UPDATED" });
+        const encoder = new TextEncoder();
+        (agoraClient.current as any).sendStreamMessage(
+          encoder.encode(payload),
+          false,
         );
-        console.log("✅ 웹소켓 전송 완료 (일정 동기화 빔)!");
+        console.log("✅ 아고라 직통 채널로 화면 전환 신호 발사 완료!");
       }
     } catch (err: unknown) {
       console.error("AI 일정 생성 실패:", err);
@@ -442,36 +446,9 @@ export default function TripWorkspace() {
 
       // 1. 서버가 CHAT으로 보낸 경우
       if (data.type === "CHAT") {
-        // 🌟 텍스트가 암호로 시작하면? (startsWith로 변경!)
-        if (data.text && data.text.startsWith("[[PLAN_UPDATED]]")) {
-          // 내가 누른 게 아닐 때만 갱신 (메아리 방지)
-          if (data.sender !== myLoginId) {
-            // 🌟 꼼수 해독: 텍스트 뒤에 붙어온 JSON을 떼어내서 내 화면에 즉시 꽂아버림!
-            const planDataStr = data.text.replace("[[PLAN_UPDATED]]", "");
-
-            if (planDataStr) {
-              try {
-                const syncedPlan = JSON.parse(planDataStr);
-                setPlanData(syncedPlan);
-                setViewMode("plan");
-                setShowSearchUI(false);
-                setSelectedPlaces([]); // 다른 사람들도 장소 바구니 싹 비워주기
-                autoFitBoundsRef.current = true;
-                toast.success("🚀 일정이 갱신되었습니다! 다 함께 이동합니다.");
-              } catch (e) {
-                loadExistingPlan(); // 혹시 실패하면 기존 방식대로 DB에서 부르기
-              }
-            } else {
-              loadExistingPlan();
-            }
-          }
-        }
-        // 🌟 일반 텍스트 채팅이거나 SYSTEM 메시지일 때
-        else {
-          // 🚨 내가 방금 마이크로 말한 건 이미 화면에 띄웠으니, 남이 말한 것만 화면에 추가!
-          if (data.sender !== myLoginId || data.sender === "SYSTEM") {
-            setMessages((prev) => [...prev, data]);
-          }
+        // 🌟 3. 꼼수 코드 싹 다 날리고 순수하게 채팅만 띄웁니다!
+        if (data.sender !== myLoginId || data.sender === "SYSTEM") {
+          setMessages((prev) => [...prev, data]);
         }
       }
       // 2. 서버가 PLACES로 보낸 경우 (AI 장소 추출)
@@ -677,6 +654,15 @@ export default function TripWorkspace() {
               // 👇 이 부분 추가! (락 신호를 받았을 때)
               else if (data.type === "LOCK_PLAN") {
                 setLockedBy(data.isLocked ? uid : null);
+              }
+              // 🌟 2. [핵심 추가] 아고라 직통 채널로 "화면 넘겨!" 신호를 받았을 때
+              else if (data.type === "PLAN_UPDATED") {
+                toast.success("🚀 일정이 갱신되었습니다! 다 함께 이동합니다.");
+                setViewMode("plan"); // 화면을 플랜으로 강제 전환!
+                setShowSearchUI(false);
+                setSelectedPlaces([]); // 장소 바구니 비워주기
+                autoFitBoundsRef.current = true;
+                loadExistingPlan(); // DB에서 예쁘게 저장된 최신 일정 가져오기!
               }
             } catch (e) {
               console.error("좌표 파싱 에러", e);
@@ -1011,8 +997,8 @@ export default function TripWorkspace() {
           const content = `<div style="padding:15px; font-size:14px; width:220px; border-radius:12px; box-sizing:border-box;">
             ${imageHtml}
             <h4 style="margin:0 0 5px 0; font-size:15px; font-weight:bold; color:#1f2937; line-height:1.3; word-break:keep-all;">${place.title}</h4>
-            <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px; transition:0.2s;">장소 추가하기</button>
-          </div>`;
+            </div>`;
+          // <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px; transition:0.2s;">장소 추가하기</button>
 
           infoWindowInstance.current.setContent(content);
           infoWindowInstance.current.open(mapInstance.current, marker);
@@ -1048,7 +1034,7 @@ export default function TripWorkspace() {
 
     const searchOptions = {
       location: center,
-      radius: 5000,
+      radius: 20000,
       sort: kakao.maps.services.SortBy.ACCURACY,
     };
 
@@ -1066,7 +1052,7 @@ export default function TripWorkspace() {
               keyword: String(keyword.trim()),
               lat: Number(searchLat.toFixed(6)),
               lng: Number(searchLng.toFixed(6)),
-              radius: 2000,
+              radius: 20000,
               roomId: safeRoomId,
             });
 
@@ -1132,6 +1118,10 @@ export default function TripWorkspace() {
       toast.error("주변 장소를 불러오지 못했습니다.");
     }
   };
+  // 🌟 [추가] planData에서 고유한 날짜(MM/DD)들만 순서대로 쏙쏙 뽑아냅니다!
+  const uniqueDays = Array.from(
+    new Set(planData.map((p) => `${p.month}/${p.day}`)),
+  );
 
   return (
     <div className="flex w-full h-screen bg-white font-pretendard overflow-hidden relative">
@@ -1178,6 +1168,7 @@ export default function TripWorkspace() {
         <Sidebar
           rooms={selectedPlaces}
           listTitle="우리가 모은 장소"
+          dateRange={displayDateRange}
           bottomActions={[
             {
               // 🌟 1. "AI 일정 생성" 버튼 (map 모드)
@@ -1215,6 +1206,13 @@ export default function TripWorkspace() {
             autoFitBoundsRef.current = true;
           }}
           listTitle="AI 추천 일정"
+          onPlaceClick={(lat, lng) => {
+            if (mapInstance.current) {
+              const { kakao } = window as any;
+              // 💡 panTo를 쓰면 화면이 뚝 끊기지 않고 헬리콥터처럼 스르륵~ 날아갑니다
+              mapInstance.current.panTo(new kakao.maps.LatLng(lat, lng));
+            }
+          }}
           bottomActions={[
             {
               // 🌟 2. 잃어버렸던 "장소 더 찾기" 버튼 부활! (plan 모드)
@@ -1291,6 +1289,14 @@ export default function TripWorkspace() {
                 >
                   {p.name} {isMe && " (나)"}
                 </div>
+
+                {!isMe && (
+                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-30 translate-y-[-5px] group-hover:translate-y-0">
+                    <div className="bg-gray-800/90 text-white text-[10px] font-medium px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-md flex items-center gap-1">
+                      <span>📍</span> 위치 확인하기
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1365,7 +1371,10 @@ export default function TripWorkspace() {
         {viewMode === "plan" && !isLoading && !showSearchUI && (
           <div className="absolute bottom-[140px] left-1/2 -translate-x-1/2 z-[100] bg-white/90 backdrop-blur px-8 py-3 rounded-full shadow-lg border border-primary-200">
             <span className="text-primary-600 font-extrabold mr-2">
-              {selectedDay === null ? "전체 일정" : `${selectedDay}일차`}
+              {/* 🌟 날짜 데이터가 있으면 "1일차 (2/20)" 형식으로 보여주기! */}
+              {selectedDay === null
+                ? "전체 일정"
+                : `${selectedDay}일차 (${uniqueDays[selectedDay - 1] || ""})`}
             </span>
           </div>
         )}
