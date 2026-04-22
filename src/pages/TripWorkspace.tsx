@@ -10,6 +10,8 @@ import Button from "../components/common/Button";
 import { travelApi } from "../api/travelApi";
 import { roomApi } from "../api/roomApi";
 
+import toast from "react-hot-toast";
+
 import exitIcon from "../assets/icons/exit_to_app.svg";
 
 /** =========================================================================
@@ -20,7 +22,7 @@ const AGORA_APP_ID = "882e4424401f46b1af80749bc88d5edb";
 const rawAddSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M20 10V30M10 20H30" stroke="#1C1B1F" stroke-width="3" stroke-linecap="round"/></svg>`;
 const ADD_PLACE_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(rawAddSvg)}`;
 
-const rawRefreshSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><mask id="mask0_439_60" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#D9D9D9"/></mask><g mask="url(#mask0_439_60)"><path d="M14.4747 34.7177C12.7567 33.9741 11.2588 32.9634 9.981 31.6856C8.70322 30.4078 7.69252 28.9099 6.94891 27.1919C6.2053 25.4741 5.8335 23.6323 5.8335 21.6664H8.3335C8.3335 24.9164 9.46544 27.6734 11.7293 29.9373C13.9932 32.2012 16.7502 33.3331 20.0002 33.3331C23.2502 33.3331 26.0071 32.2012 28.271 29.9373C30.5349 27.6734 31.6668 24.9164 31.6668 21.6664C31.6668 18.4164 30.5349 15.6595 28.271 13.3956C26.0071 11.1317 23.2502 9.99978 20.0002 9.99978H19.5577L22.2052 12.6473L20.4489 14.4548L14.7439 8.73395L20.481 3.0127L22.2372 4.8202L19.5577 7.49978H20.0002C21.966 7.49978 23.8078 7.87159 25.5256 8.6152C27.2436 9.35881 28.7416 10.3695 30.0193 11.6473C31.2971 12.9251 32.3078 14.423 33.0514 16.141C33.795 17.8588 34.1668 19.7006 34.1668 21.6664C34.1668 23.6323 33.795 25.4741 33.0514 27.1919C32.3078 28.9099 31.2971 30.4078 30.0193 31.6856C28.7416 32.9634 27.2436 33.9741 25.5256 34.7177C23.8078 35.4613 21.966 35.8331 20.0002 35.8331C18.0343 35.8331 16.1925 35.4613 14.4747 34.7177Z" fill="#FEFEFE"/></g></svg>`;
+const rawRefreshSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><mask id="mask0_439_60" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#D9D9D9"/></mask><g mask="url(#mask0_439_60)"><path d="M14.4747 34.7177C12.7567 33.9741 11.2588 32.9634 9.981 31.6856C8.70322 30.4078 7.69252 28.9099 6.94891 27.1919C6.2053 25.4741 5.8335 23.6323 5.8335 21.6664H8.3335C8.3335 24.9164 9.46544 27.6734 11.7293 29.9373C13.9932 32.2012 16.7502 33.3331 20.0002 33.3331C23.2502 33.3331 26.0071 32.2012 28.271 29.9373C30.5349 27.6734 31.6668 24.9164 31.6668 21.6664C31.6668 18.4164 30.5349 15.6595 28.271 13.3956C26.0071 11.1317 23.2502 9.99978 20.0002 9.99978H19.5577L22.2052 12.6473L20.4489 14.4548L14.7439 8.73395L20.481 3.0127L22.2372 4.8202L19.5577 7.49978H20.0002C21.966 7.49978 23.8078 7.87159 25.5256 8.6152C27.2436 9.35881 28.7416 10.3695 30.0193 11.6473C31.2971 12.9251 32.3078 14.423 33.0514 16.141C33.795 17.8588 34.1668 19.7006 34.1668 21.6664C34.1668 23.6323 33.795 25.4741 33.0514 27.1919C32.3078 28.9099 31.2971 30.4078 30.0193 31.6856C28.7416 32.9634 27.2436 33.9741 25.5256 34.7177C23.8078 35.4613 21.966 35.8331 20.0002 35.8331C18.0343 35.8331 16.1925 35.4613 14.4747 34.7177Z" fill="#1C1B1F"/></g></svg>`;
 const REFRESH_PLAN_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(rawRefreshSvg)}`;
 
 const rawAiSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><mask id="mask0_439_435" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#D9D9D9"/></mask><g mask="url(#mask0_439_435)"><path d="M28.7497 36.25V31.25H23.7497V28.75H28.7497V23.75H31.2497V28.75H36.2497V31.25H31.2497V36.25H28.7497ZM8.84592 32.5C8.00398 32.5 7.29134 32.2084 6.70801 31.625C6.12467 31.0417 5.83301 30.3291 5.83301 29.4871V10.5129C5.83301 9.671 6.12467 8.95836 6.70801 8.37503C7.29134 7.79169 8.00398 7.50003 8.84592 7.50003H11.1534V3.97461H13.7176V7.50003H23.0126V3.97461H25.5126V7.50003H27.8201C28.662 7.50003 29.3747 7.79169 29.958 8.37503C30.5413 8.95836 30.833 9.671 30.833 10.5129V20.3592C30.4163 20.3078 29.9997 20.2821 29.583 20.2821C29.1663 20.2821 28.7497 20.3078 28.333 20.3592V17.1796H8.33301V29.4871C8.33301 29.6154 8.38648 29.7329 8.49342 29.8396C8.60009 29.9466 8.71759 30 8.84592 30H20.2401C20.2401 30.4167 20.2658 30.8334 20.3172 31.25C20.3683 31.6667 20.4622 32.0834 20.5988 32.5H8.84592ZM8.33301 14.6796H28.333V10.5129C28.333 10.3846 28.2795 10.2671 28.1726 10.1604C28.0659 10.0535 27.9484 10 27.8201 10H8.84592C8.71759 10 8.60009 10.0535 8.49342 10.1604C8.38648 10.2671 8.33301 10.3846 8.33301 10.5129V14.6796Z" fill="#1C1B1F"/></g></svg>`;
@@ -111,10 +113,10 @@ const MicIcon = ({ isActive }: { isActive: boolean }) => {
 };
 
 const CATEGORIES = [
-  { id: "all", label: "전체", icon: "🔍" },
+  // { id: "all", label: "전체", icon: "🔍" },
   { id: "attraction", label: "관광지", icon: "🏞️" },
   { id: "culture", label: "문화시설", icon: "🏛️" },
-  { id: "festival", label: "축제", icon: "🎉" },
+  // { id: "festival", label: "축제", icon: "🎉" },
   { id: "leports", label: "레포츠", icon: "⚽" },
   { id: "stay", label: "숙박", icon: "🏨" },
   { id: "shopping", label: "쇼핑", icon: "🛍️" },
@@ -155,6 +157,55 @@ const getUserColor = (uid: string | number) => {
   return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
 };
 
+// 🌟 오늘 날짜를 숫자(예: 20260422)로 변환하는 함수
+const getTodayNumber = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return parseInt(`${year}${month}${day}`, 10);
+};
+
+// 🌟 묻지도 따지지도 않는 절대 방어 필터망!
+const filterPastFestivals = (places: any[], categoryId: string) => {
+  if (categoryId !== "festival" && categoryId !== "all") {
+    return places;
+  }
+
+  const todayNum = getTodayNumber(); // 예: 20260422
+
+  return places.filter((place) => {
+    // 이 장소가 '축제'인지 확인
+    const isFestival =
+      categoryId === "festival" || String(place.contenttypeid) === "15";
+
+    // 날짜 긁어오기 (상준님이 어떻게 줄지 몰라서 다 넣어둠)
+    const endDateStr =
+      place.eventenddate ||
+      place.endDate ||
+      place.eventEndDate ||
+      place.end_date;
+
+    // 🚨 1. 축제인데 끝나는 날짜 데이터가 없다? ➡️ 상준님 API에서 누락된 거임! 무조건 버림!
+    if (isFestival && !endDateStr) {
+      console.warn("🚨 [쳐냄] 날짜 데이터 없는 축제:", place.title);
+      return false;
+    }
+
+    // 🚨 2. 날짜가 있다면, 과거인지 미래인지 검사!
+    if (endDateStr) {
+      const endNum = parseInt(String(endDateStr).replace(/[^0-9]/g, ""), 10);
+
+      if (endNum < todayNum) {
+        console.warn(`🗑️ [쳐냄] 과거 축제(${endNum}):`, place.title);
+        return false; // 오늘 날짜보다 작으면(과거면) 얄짤없이 버림!
+      }
+    }
+
+    return true; // 무사히 통과한 진짜 정보들
+  });
+};
+
 export default function TripWorkspace() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -163,14 +214,35 @@ export default function TripWorkspace() {
   const urlStartDate = searchParams.get("start");
   const urlEndDate = searchParams.get("end");
 
+  // 🌟 [복구완료] URL 파라미터나 방 아이디(jeju-12345)에서 "jeju" 완벽 추출!
+  let initialTitle = "여행";
+  const paramTitle = searchParams.get("title");
+
+  if (paramTitle) {
+    initialTitle = decodeURIComponent(paramTitle);
+  } else if (currentRoomId) {
+    try {
+      initialTitle = decodeURIComponent(currentRoomId).split("-")[0];
+    } catch (e) {}
+  }
+  const urlTitle = initialTitle;
+
   useEffect(() => {
     if (!currentRoomId) {
-      alert("유효하지 않은 초대 링크입니다. 정상적인 링크로 접속해주세요!");
+      toast.error(
+        "유효하지 않은 초대 링크입니다. 정상적인 링크로 접속해주세요!",
+      );
       navigate("/");
     }
   }, [currentRoomId, navigate]);
 
   const safeRoomId = currentRoomId as string;
+  useEffect(() => {
+    document.title = `${urlTitle} - TravelZip`;
+    return () => {
+      document.title = "TravelZip";
+    };
+  }, [urlTitle]);
 
   // --- [States] ---
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -193,7 +265,6 @@ export default function TripWorkspace() {
     { id: myLoginId, name: myLoginId, isMuted: true },
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [toastMsg, setToastMsg] = useState("");
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const lastSentTime = useRef(0); // 전송 빈도 조절용
   const [lockedBy, setLockedBy] = useState<string | null>(null);
@@ -216,11 +287,6 @@ export default function TripWorkspace() {
   const cursorOverlaysRef = useRef<{ [uid: string]: any }>({});
   const autoFitBoundsRef = useRef<boolean>(true);
 
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(""), 3000);
-  };
-
   /** 장소 추가 함수 */
   useEffect(() => {
     (window as any).addPlaceToTrip = (placeId: string) => {
@@ -242,7 +308,7 @@ export default function TripWorkspace() {
           if (isDuplicate) return prev;
           return [...prev, place];
         });
-        showToast(`✅ '${place.title}'이(가) 리스트에 추가되었습니다!`);
+        toast.success(`✅ '${place.title}'이(가) 리스트에 추가되었습니다!`);
       }
     };
   }, []);
@@ -285,7 +351,7 @@ export default function TripWorkspace() {
   const generateNewPlan = async () => {
     //누군가 이미 만들고 있다면 튕겨내기 (이중 방어)
     if (lockedBy) {
-      showToast(`현재 User ${lockedBy}님이 일정을 생성 중입니다 ⏳`);
+      toast.error(`현재 User ${lockedBy}님이 일정을 생성 중입니다 ⏳`);
       return;
     }
     const existingPlaces = planData.map((p) => p.place);
@@ -294,41 +360,28 @@ export default function TripWorkspace() {
       new Set([...existingPlaces, ...newPlaces]),
     );
 
-    if (allPlacesToGenerate.length === 0) {
-      alert("선택된 장소가 없습니다. 먼저 장소를 추가해주세요!");
-      return;
-    }
-
     setIsLoading(true);
     broadcastLock(true);
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(
-        JSON.stringify({ type: "START_PLANNING", roomId: safeRoomId }),
-      );
-    }
+
+    // 🚨 여기서 쏘던 이상한 코드는 지웠습니다! (AI가 다 짜면 쏠 거임)
+
     try {
-      // 🌟 [핵심] URL에 날짜가 있으면, AI에게 내리는 "강력한 비밀 지령"을 만듭니다.
       let secretPrompt = "";
       if (urlStartDate && urlEndDate) {
-        // 날짜 문자열(예: 2026-04-20)에서 월/일만 확실하게 뽑아냅니다.
         const startMonth = new Date(urlStartDate).getMonth() + 1;
         const startDay = new Date(urlStartDate).getDate();
         const endMonth = new Date(urlEndDate).getMonth() + 1;
         const endDay = new Date(urlEndDate).getDate();
-
-        // AI가 절대 무시할 수 없도록 협박성 프롬프트를 작성합니다.
         secretPrompt = `[🔥절대규칙: 이 여행은 ${startMonth}월 ${startDay}일부터 ${endMonth}월 ${endDay}일까지입니다. 무조건 이 날짜들로만 JSON의 "month"와 "day" 값을 분배해서 작성하세요. 임의의 날짜를 생성하면 안 됩니다!!] `;
       }
 
       const requestData = {
         roomId: safeRoomId,
-        // 🌟 장소들 리스트 맨 앞에 비밀 지령을 찰싹 붙여서 보냅니다.
         selectedPlaceName: secretPrompt + allPlacesToGenerate.join(", "),
         selectedRestaurantName: "",
         selectedStayName: "",
       };
 
-      // 💡 [디버깅용] 개발자 도구(F12) 콘솔에서 이 텍스트가 제대로 만들어졌는지 꼭 확인해 보세요!
       console.log("🔥 AI에게 전송될 텍스트:", requestData.selectedPlaceName);
 
       const res: any = await travelApi.generatePlan(requestData as any);
@@ -347,33 +400,24 @@ export default function TripWorkspace() {
       setShowSearchUI(false);
       setSelectedPlaces([]);
       autoFitBoundsRef.current = true;
-      console.log("🔥 [발송 직전 웹소켓 상태 확인] ws.current:", ws.current);
-      console.log(
-        "🔥 [상태 코드] readyState:",
-        ws.current?.readyState,
-        "(1이어야 정상 OPEN 상태입니다)",
-      );
 
-      if (ws.current?.readyState === WebSocket.OPEN) {
+      // 🌟 2. AI가 일정을 다 짰으니, 이제 친구들에게 통째로 쏴줍니다!
+      // TS 에러(2367) 방지를 위해 WebSocket.OPEN 대신 숫자 1 사용
+      if (ws.current?.readyState === 1) {
         ws.current.send(
           JSON.stringify({
+            type: "CHAT",
             roomId: safeRoomId,
             sender: myLoginId,
-            text: "[[PLAN_UPDATED]]",
+            // 내가 방금 받은 AI 일정(newPlanItems)을 찰싹 붙여서 통째로 던져줌!
+            text: "[[PLAN_UPDATED]]" + JSON.stringify(newPlanItems),
           }),
         );
-        console.log("✅ 웹소켓 전송 완료!");
-      } else {
-        console.error(
-          "🚨 앗! 웹소켓 연결이 끊어져서 신호를 보낼 수 없습니다. 현재 상태:",
-          ws.current?.readyState,
-        );
+        console.log("✅ 웹소켓 전송 완료 (일정 동기화 빔)!");
       }
-
-      // 2. 다른 사람들에게 신호 보내기 (데이터 대신 Trigger 역할만)
     } catch (err: unknown) {
       console.error("AI 일정 생성 실패:", err);
-      alert("일정 생성에 실패했습니다.");
+      toast.error("일정 생성에 실패했습니다.");
     } finally {
       setIsLoading(false);
       broadcastLock(false);
@@ -398,27 +442,42 @@ export default function TripWorkspace() {
 
       // 1. 서버가 CHAT으로 보낸 경우
       if (data.type === "CHAT") {
-        // 🌟 우리가 약속한 비밀 암호가 들어왔을 때
-        if (data.text === "[[PLAN_UPDATED]]") {
+        // 🌟 텍스트가 암호로 시작하면? (startsWith로 변경!)
+        if (data.text && data.text.startsWith("[[PLAN_UPDATED]]")) {
           // 내가 누른 게 아닐 때만 갱신 (메아리 방지)
           if (data.sender !== myLoginId) {
-            setViewMode("plan");
-            setShowSearchUI(false);
-            showToast(
-              "🚀 누군가 일정을 생성(갱신)했습니다! 다 함께 이동합니다.",
-            );
-            loadExistingPlan(); // 백엔드 DB에서 최신 일정 불러오기
+            // 🌟 꼼수 해독: 텍스트 뒤에 붙어온 JSON을 떼어내서 내 화면에 즉시 꽂아버림!
+            const planDataStr = data.text.replace("[[PLAN_UPDATED]]", "");
+
+            if (planDataStr) {
+              try {
+                const syncedPlan = JSON.parse(planDataStr);
+                setPlanData(syncedPlan);
+                setViewMode("plan");
+                setShowSearchUI(false);
+                setSelectedPlaces([]); // 다른 사람들도 장소 바구니 싹 비워주기
+                autoFitBoundsRef.current = true;
+                toast.success("🚀 일정이 갱신되었습니다! 다 함께 이동합니다.");
+              } catch (e) {
+                loadExistingPlan(); // 혹시 실패하면 기존 방식대로 DB에서 부르기
+              }
+            } else {
+              loadExistingPlan();
+            }
           }
         }
         // 🌟 일반 텍스트 채팅이거나 SYSTEM 메시지일 때
         else {
-          setMessages((prev) => [...prev, data]);
+          // 🚨 내가 방금 마이크로 말한 건 이미 화면에 띄웠으니, 남이 말한 것만 화면에 추가!
+          if (data.sender !== myLoginId || data.sender === "SYSTEM") {
+            setMessages((prev) => [...prev, data]);
+          }
         }
       }
       // 2. 서버가 PLACES로 보낸 경우 (AI 장소 추출)
       else if (data.type === "PLACES") {
         if (data.places && data.places.length > 0) {
-          showToast(`📍 AI가 장소를 인식했어요: ${data.places.join(", ")}`);
+          toast.success(`📍 AI가 장소를 인식했어요: ${data.places.join(", ")}`);
           const aiPlaces = data.places.map(
             (placeName: string, index: number) => ({
               id: `ai-place-${Date.now()}-${index}`,
@@ -459,9 +518,18 @@ export default function TripWorkspace() {
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
+
+            // 🌟 1. [핵심 추가] 서버로 보내기 전에 내 화면에 0.1초 만에 바로 띄워버리기!!!
+            setMessages((prev) => [
+              ...prev,
+              { type: "CHAT", sender: myLoginId, text: transcript },
+            ]);
+
+            // 2. 서버로는 원래대로 조용히 전송~
             if (ws.current?.readyState === WebSocket.OPEN) {
               ws.current.send(
                 JSON.stringify({
+                  type: "CHAT",
                   roomId: safeRoomId,
                   sender: myLoginId,
                   text: transcript,
@@ -684,8 +752,8 @@ export default function TripWorkspace() {
       kakao.maps.load(() => {
         if (mapInstance.current) return;
         mapInstance.current = new kakao.maps.Map(mapRef.current, {
-          center: new kakao.maps.LatLng(33.450701, 126.570667),
-          level: 5,
+          center: new kakao.maps.LatLng(33.450701, 126.570667), // 기본은 제주도/서울 등
+          level: 9, // 처음에 넓게 보기 위해 레벨을 살짝 높입니다
         });
         clustererInstance.current = new kakao.maps.MarkerClusterer({
           map: mapInstance.current,
@@ -694,6 +762,7 @@ export default function TripWorkspace() {
         });
         infoWindowInstance.current = new kakao.maps.InfoWindow({ zIndex: 1 });
         setIsMapLoaded(true);
+
         kakao.maps.event.addListener(mapInstance.current, "click", () => {
           infoWindowInstance.current.close(); // 검색 결과 핀 닫기
           infoWindowInstance.current.setMap(null); // AI 일정 커스텀 핀 닫기
@@ -726,17 +795,28 @@ export default function TripWorkspace() {
               lastSentTime.current = now;
             }
           },
-        );
+        ); // 👈 mousemove 이벤트는 여기서 끝!
+
+        // 🌟 [수정된 부분] 지도 이동 로직은 마우스 이벤트 '바깥'에 한 번만 실행되게 빼야 합니다!!!
+        if (urlTitle && urlTitle !== "여행") {
+          const ps = new kakao.maps.services.Places();
+          ps.keywordSearch(urlTitle, (data: any, status: any) => {
+            if (status === kakao.maps.services.Status.OK) {
+              const moveLatLon = new kakao.maps.LatLng(data[0].y, data[0].x);
+              mapInstance.current.setCenter(moveLatLon); // 그 지역으로 지도 순간이동!
+            }
+          });
+        }
       });
     };
 
     initMap();
-  }, []);
+  }, [urlTitle]); // 👈 여기에 urlTitle 추가
 
   const handleProfileClick = (targetUid: string) => {
     // 1. 내 프로필을 눌렀을 때는 무시
     if (String(targetUid) === String(myLoginId)) {
-      showToast("이것은 내 프로필입니다.");
+      toast.error("이것은 내 프로필입니다.");
       return;
     }
 
@@ -746,9 +826,9 @@ export default function TripWorkspace() {
       // 3. 오버레이에서 현재 위도/경도 좌표를 뽑아내서 그곳으로 지도 이동!
       const pos = overlay.getPosition();
       mapInstance.current.panTo(pos);
-      showToast(`🚀 User ${targetUid}님의 위치로 이동했습니다!`);
+      toast.success(`🚀 User ${targetUid}님의 위치로 이동했습니다!`);
     } else {
-      showToast(
+      toast.error(
         `User ${targetUid}님의 현재 마우스 위치를 아직 알 수 없습니다.`,
       );
     }
@@ -798,7 +878,7 @@ export default function TripWorkspace() {
         const pinColor =
           selectedDay === null || viewMode === "map" || showSearchUI
             ? DAY_COLORS[dayIndex % DAY_COLORS.length]
-            : "#1A40FF";
+            : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length];
 
         // 🌟 촌스러운 기본 마커 대신 예쁜 HTML/CSS 커스텀 마커 생성
         const content = document.createElement("div");
@@ -865,7 +945,7 @@ export default function TripWorkspace() {
           strokeColor:
             selectedDay === null || viewMode === "map" || showSearchUI
               ? DAY_COLORS[dayIndex % DAY_COLORS.length]
-              : "#1A40FF",
+              : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length], // 👈 핵심 수정 부분!
           strokeOpacity: viewMode === "map" || showSearchUI ? 0.3 : 0.8,
           strokeStyle: "solid",
         });
@@ -991,11 +1071,21 @@ export default function TripWorkspace() {
             });
 
             if (!res.data || res.data.length === 0) {
-              alert(`'${keyword}'에 대한 여행지 데이터가 없습니다.`);
+              toast.error(`'${keyword}'에 대한 여행지 데이터가 없습니다.`);
               return;
             }
 
-            setSearchResults(res.data);
+            // 🚨 필터망 가동!
+            const validData = filterPastFestivals(res.data, selectedCat.id);
+
+            if (!validData || validData.length === 0) {
+              toast.error(
+                `'${keyword}'에 대한 (현재 진행 중인) 여행지 데이터가 없습니다.`,
+              );
+              return;
+            }
+
+            setSearchResults(validData); // 👈 걸러진 데이터만 넣기!
             setIsCatOpen(false);
             mapInstance.current.panTo(
               new kakao.maps.LatLng(searchLat, searchLng),
@@ -1004,7 +1094,7 @@ export default function TripWorkspace() {
             console.error("검색 실패:", error);
           }
         } else {
-          alert("카카오 지도에서 위치를 찾을 수 없습니다.");
+          toast.error("카카오 지도에서 위치를 찾을 수 없습니다.");
         }
       },
       searchOptions,
@@ -1025,13 +1115,21 @@ export default function TripWorkspace() {
       } as any);
 
       if (!res.data || res.data.length === 0) {
-        alert("주변에 해당 장소가 없습니다.");
+        toast.error("주변에 해당 장소가 없습니다.");
         return;
       }
-      setSearchResults(res.data);
+
+      // 🚨 필터망 가동!
+      const validData = filterPastFestivals(res.data, cat);
+
+      if (!validData || validData.length === 0) {
+        toast.error("주변에 (현재 진행 중인) 해당 장소가 없습니다.");
+        return;
+      }
+      setSearchResults(validData); // 👈 걸러진 데이터만 넣기!
     } catch (error) {
       console.error("주변 검색 실패:", error);
-      alert("주변 장소를 불러오지 못했습니다.");
+      toast.error("주변 장소를 불러오지 못했습니다.");
     }
   };
 
@@ -1087,7 +1185,7 @@ export default function TripWorkspace() {
               icon: AI_PLAN_ICON,
               onClick: () => {
                 if (lockedBy)
-                  return showToast(
+                  return toast.error(
                     `User ${lockedBy}님이 일정을 짜고 있어요 ⏳`,
                   );
                 setIsConfirmModalOpen(true);
@@ -1133,7 +1231,7 @@ export default function TripWorkspace() {
               icon: REFRESH_PLAN_ICON,
               onClick: () => {
                 if (lockedBy)
-                  return showToast(
+                  return toast.error(
                     `User ${lockedBy}님이 일정을 짜고 있어요 ⏳`,
                   );
                 setIsConfirmModalOpen(true);
@@ -1318,11 +1416,19 @@ export default function TripWorkspace() {
           </div>
         )}
 
-        {isLoading && (
+        {(isLoading || lockedBy) && (
           <div className="absolute inset-0 z-[1000] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
             <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mb-4" />
-            <h2 className="text-h3 font-bold text-gray-800">
-              AI가 완벽한 동선을 짜고 있습니다...
+            <h2 className="text-h3 font-bold text-gray-800 text-center leading-relaxed">
+              {lockedBy ? (
+                <>
+                  User {lockedBy}님이 AI 일정을 갱신 중입니다...
+                  <br />
+                  잠시만 기다려주세요! ✈️
+                </>
+              ) : (
+                "AI가 완벽한 동선을 짜고 있습니다... ✈️"
+              )}
             </h2>
           </div>
         )}

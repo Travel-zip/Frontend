@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../../api/authApi";
 import Button from "../../components/common/Button";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
@@ -12,16 +13,20 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const res = await authApi.login({ loginId, password });
-      const { accessToken, user } = res.data; // 서버 응답 구조 분해
+      const { accessToken, user } = res.data;
 
       localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("loginId", user.loginId); // 서버가 준 아이디 저장
+      localStorage.setItem("loginId", user.loginId);
 
-      alert(`반갑습니다, ${user.loginId}님!`);
-      navigate("/");
-      window.location.reload();
+      // 🌟 success 달아주기 & reload 지우기!
+      toast.success(`반갑습니다, ${user.loginId}님!`);
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+      // window.location.reload(); 👈 삭제!!!
     } catch (err: any) {
-      alert(err.response?.data?.message || "로그인 실패");
+      // 🌟 error 달아주기!
+      toast.error(err.response?.data?.message || "로그인 실패");
     }
   };
 

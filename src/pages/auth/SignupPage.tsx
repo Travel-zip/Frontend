@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // navigate 추가
 import Button from "../../components/common/Button";
 import { authApi } from "../../api/authApi";
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -23,32 +24,34 @@ export default function SignupPage() {
   // 1️⃣ 인증번호 발송
   const handleSendCode = async () => {
     if (!email) {
-      alert("이메일을 먼저 입력해주세요.");
+      toast.error("이메일을 먼저 입력해주세요.");
       return;
     }
 
     try {
       await authApi.sendCode({ email });
       setIsCodeSent(true);
-      alert("인증번호가 발송되었습니다. 이메일을 확인해주세요!");
+      toast.success("인증번호가 발송되었습니다. 이메일을 확인해주세요!");
     } catch (err: any) {
-      alert(err.response?.data?.message || "인증번호 발송에 실패했습니다.");
+      toast.error(
+        err.response?.data?.message || "인증번호 발송에 실패했습니다.",
+      );
     }
   };
 
   // 2️⃣ 인증번호 확인
   const handleVerifyCode = async () => {
     if (!authCode) {
-      alert("인증번호를 입력해주세요.");
+      toast.error("인증번호를 입력해주세요.");
       return;
     }
 
     try {
       await authApi.verifyCode({ email, code: authCode });
       setIsEmailVerified(true);
-      alert("이메일 인증이 완료되었습니다!");
+      toast.success("이메일 인증이 완료되었습니다!");
     } catch (err: any) {
-      alert(
+      toast.error(
         err.response?.data?.message || "인증번호가 틀렸거나 만료되었습니다.",
       );
     }
@@ -59,12 +62,12 @@ export default function SignupPage() {
     e.preventDefault();
 
     if (!isEmailVerified) {
-      alert("이메일 인증을 먼저 완료해주세요!");
+      toast.error("이메일 인증을 먼저 완료해주세요!");
       return;
     }
 
     if (!isPasswordMatch) {
-      alert("비밀번호가 일치하지 않습니다.");
+      toast.error("비밀번호가 일치하지 않습니다.");
       return;
     }
 
@@ -75,13 +78,13 @@ export default function SignupPage() {
         email,
       });
 
-      alert("회원가입 성공! 로그인 페이지로 이동합니다.");
+      toast.success("회원가입 성공! 로그인 페이지로 이동합니다.");
       navigate("/login"); // 성공 시 로그인 페이지로 이동
     } catch (err: any) {
       const errorMsg =
         err.response?.data?.message ||
         "회원가입 실패했습니다. 입력 정보를 확인하세요.";
-      alert(errorMsg);
+      toast.error(errorMsg);
     }
   };
 

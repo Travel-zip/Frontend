@@ -3,6 +3,7 @@ import AddButton from "../components/common/AddBtn";
 import PencilImg from "../assets/Design_img/source/pencil.png";
 import PlanCard, { type PlanData } from "../components/common/PlanCard";
 import WeatherDateRangePicker from "../components/DatePicker/WeatherDateRangePicker";
+import toast from "react-hot-toast";
 
 const cityCoordinates = [
   { name: "서울", lat: 37.5665, lon: 126.978 },
@@ -62,15 +63,15 @@ const Plan: React.FC<PlanProps> = ({
 
   const handleConfirm = () => {
     if (!roomName.trim()) {
-      alert("방 이름을 입력해 주세요.");
+      toast.error("방 이름을 입력해 주세요.");
       return;
     }
     if (!startDate || !endDate) {
-      alert("여행 기간을 선택해 주세요.");
+      toast.error("여행 기간을 선택해 주세요.");
       return;
     }
     if (startDate > endDate) {
-      alert("종료일이 시작일보다 빠를 수 없습니다.");
+      toast.error("종료일이 시작일보다 빠를 수 없습니다.");
       return;
     }
 

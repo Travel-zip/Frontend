@@ -9,9 +9,11 @@ export interface PlanData {
   participants: string[];
   image: string;
   country?: string;
-  // 🌟 기존 카드에도 백엔드에서 날짜를 보내준다면 사용할 수 있도록 추가해 둡니다.
   startDate?: string;
   endDate?: string;
+  // 🌟 지도를 띄우기 위한 좌표
+  lat?: number;
+  lng?: number;
 }
 
 interface PlanCardProps {
@@ -35,6 +37,9 @@ const PlanCard: React.FC<PlanCardProps> = ({
   const [editValue, setEditValue] = useState(data.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 🌟 지도를 담을 빈 박스(div)를 가리키는 변수
+  const mapRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isEditing) inputRef.current?.focus();
   }, [isEditing]);
@@ -56,20 +61,47 @@ const PlanCard: React.FC<PlanCardProps> = ({
     }
   };
 
-  // 🌟 에러 해결된 카드 클릭 함수!
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button") || isEditing) return;
 
-    // 1. 방 번호는 현재 카드의 아이디(data.id)를 사용합니다.
     let targetUrl = `/map?roomId=${data.id}`;
-
-    // 2. 만약 기존 카드 데이터에 시작일/종료일 정보가 있다면 같이 주소에 붙여줍니다.
     if (data.startDate && data.endDate) {
       targetUrl += `&start=${data.startDate}&end=${data.endDate}`;
     }
-
     navigate(targetUrl);
   };
+
+  // 🌟 카카오 정적 지도(StaticMap) 생성 로직! (401 에러 원천 차단)
+  useEffect(() => {
+    // 좌표가 있을 때만 지도를 그립니다.
+    if (data.lat && data.lng) {
+      const initStaticMap = () => {
+        const { kakao } = window as any;
+        // 카카오맵 스크립트가 아직 안 불러와졌으면 0.1초 뒤에 다시 시도
+        if (!kakao || !kakao.maps) {
+          setTimeout(initStaticMap, 100);
+          return;
+        }
+
+        kakao.maps.load(() => {
+          if (!mapRef.current) return;
+          // 이전에 그려진 지도가 있다면 깨끗하게 지웁니다
+          mapRef.current.innerHTML = "";
+
+          const options = {
+            center: new kakao.maps.LatLng(data.lat, data.lng),
+            level: 5,
+            marker: {
+              position: new kakao.maps.LatLng(data.lat, data.lng),
+            },
+          };
+          // 카카오가 제공하는 정적 지도 컴포넌트를 mapRef 박스 안에 쏙 넣습니다!
+          new kakao.maps.StaticMap(mapRef.current, options);
+        });
+      };
+      initStaticMap();
+    }
+  }, [data.lat, data.lng]);
 
   return (
     <div
@@ -77,13 +109,27 @@ const PlanCard: React.FC<PlanCardProps> = ({
       className="flex flex-col w-[376px] h-[340px] shrink-0 rounded-[10px] border border-[#BCBCCE] bg-[#FEFEFE] overflow-hidden shadow-sm hover:shadow-md transition-all relative cursor-pointer"
     >
       {/* 1. 상단 이미지 영역 */}
-      <div
-        className="relative h-[240px] w-full bg-lightgray bg-center bg-cover bg-no-repeat overflow-hidden"
-        style={{ backgroundImage: `url(${data.image})` }}
-      >
+      <div className="relative h-[240px] w-full bg-gray-100 overflow-hidden">
+        {/* 🌟 좌표가 있으면 카카오맵을, 없으면 기본 이미지를 띄워줍니다! */}
+        {data.lat && data.lng ? (
+          <>
+            {/* pointer-events-none: 사용자가 썸네일 지도를 드래그하는 걸 방지합니다 */}
+            <div ref={mapRef} className="w-full h-full pointer-events-none" />
+            <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+          </>
+        ) : (
+          <div
+            className="w-full h-full bg-center bg-cover bg-no-repeat"
+            style={{ backgroundImage: `url(${data.image})` }}
+          />
+        )}
+
         {/* 즐겨찾기 별 */}
         <button
-          onClick={() => onToggleFavorite(data.id)}
+          onClick={(e) => {
+            e.stopPropagation(); // 버튼 누를 때 카드 클릭 방지
+            onToggleFavorite(data.id);
+          }}
           className="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center bg-primary-100 rounded-full shadow-sm cursor-pointer transition-all hover:scale-105 active:scale-95"
         >
           <svg
@@ -122,7 +168,10 @@ const PlanCard: React.FC<PlanCardProps> = ({
         {/* 더보기 버튼 & 서랍 */}
         <div className="absolute right-4 bottom-4 flex flex-col items-center gap-1 z-[20]">
           <button
-            onClick={() => setIsMoreActive(!isMoreActive)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMoreActive(!isMoreActive);
+            }}
             className={`w-10 h-10 flex items-center justify-center transition-all duration-300 cursor-pointer shadow-sm ${isMoreActive ? "bg-primary-500 rounded-[20px] -translate-y-[96px]" : "bg-primary-100 rounded-full hover:bg-white"}`}
           >
             <svg
@@ -155,7 +204,8 @@ const PlanCard: React.FC<PlanCardProps> = ({
             className={`absolute bottom-0 w-[76px] h-[92px] flex flex-col items-center justify-around py-1 transition-all duration-300 border border-[#8CA2FF] rounded-[8px] bg-[#FEFEFE] shadow-lg ${isMoreActive ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
           >
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsEditing(true);
                 setIsMoreActive(false);
               }}
@@ -165,7 +215,8 @@ const PlanCard: React.FC<PlanCardProps> = ({
             </button>
             <div className="w-[60px] h-[1px] bg-[#8CA2FF]/30" />
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onCopyLink?.(data.id);
                 setIsMoreActive(false);
               }}
@@ -175,7 +226,8 @@ const PlanCard: React.FC<PlanCardProps> = ({
             </button>
             <div className="w-[60px] h-[1px] bg-[#8CA2FF]/30" />
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onDelete?.(data.id);
                 setIsMoreActive(false);
               }}

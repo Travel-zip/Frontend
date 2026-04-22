@@ -18,6 +18,9 @@ export type Room = {
 
 export interface CreateRoomRequest {
   roomId: string;
+  title?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export type FavoriteResponse = {
