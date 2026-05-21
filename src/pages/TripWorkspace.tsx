@@ -51,6 +51,42 @@ const USER_ICON = (
   </svg>
 );
 
+// 🌟 프론트가 다 해먹는 LLM 장소 추출기!
+const extractPlacesWithLLM = async (text: string) => {
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini", // 빠르고 가벼운 모델
+        messages: [
+          {
+            role: "system",
+            content: `너는 여행 장소 추출기야. 사용자의 대화에서 관광지, 식당, 숙소 이름만 추출해서 순수 JSON 배열(Array)로만 반환해. 다른 부연 설명은 절대 하지마. 장소가 없으면 []을 반환해.
+              예시: ["성산일출봉", "갈치공장"]`,
+          },
+          { role: "user", content: text },
+        ],
+      }),
+    });
+    const data = await response.json();
+    const content = data.choices[0].message.content;
+
+    // 혹시 AI가 마크다운(```json)을 붙였을까봐 벗겨내는 안전장치
+    const cleanContent = content
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    return JSON.parse(cleanContent); // ["장소1", "장소2"] 형태로 변환 완료!
+  } catch (error) {
+    console.error("LLM 장소 추출 실패:", error);
+    return [];
+  }
+};
+
 const MicIcon = ({ isActive }: { isActive: boolean }) => {
   if (isActive) {
     return (
@@ -113,7 +149,7 @@ const MicIcon = ({ isActive }: { isActive: boolean }) => {
 };
 
 const CATEGORIES = [
-  // { id: "all", label: "전체", icon: "🔍" },
+  { id: "all", label: "전체", icon: "🔍" },
   { id: "attraction", label: "관광지", icon: "🏞️" },
   { id: "culture", label: "문화시설", icon: "🏛️" },
   // { id: "festival", label: "축제", icon: "🎉" },
@@ -122,6 +158,16 @@ const CATEGORIES = [
   { id: "shopping", label: "쇼핑", icon: "🛍️" },
   { id: "food", label: "음식점", icon: "🍕" },
 ];
+
+// 🌟 UI 카테고리 ID를 카카오 카테고리 그룹 코드로 변환하는 맵핑 테이블
+const KAKAO_CATEGORY_MAP: Record<string, string> = {
+  attraction: "AT4", // 관광명소
+  culture: "CT1", // 문화시설
+  stay: "AD5", // 숙박
+  food: "FD6", // 음식점
+  shopping: "MT1", // 대형마트 (쇼핑에 가장 근접)
+  // 레포츠(leports)나 축제(festival)는 카카오 전용 코드가 없으므로 나중에 예외 처리!
+};
 const DAY_COLORS = [
   "#1A40FF",
   "#FF4081",
@@ -295,33 +341,61 @@ export default function TripWorkspace() {
   const cursorOverlaysRef = useRef<{ [uid: string]: any }>({});
   const autoFitBoundsRef = useRef<boolean>(true);
 
-  /** 장소 추가 함수 */
+  /** 🌟 카카오 검색 & 장소 추가 함수 (API 연동) */
   useEffect(() => {
-    (window as any).addPlaceToTrip = (placeId: string) => {
-      const place = allFoundPlacesRef.current.find((p) => {
-        const safeId = String(
-          p.id || p.placeId || p.contentid || p.contentId || p.title,
-        );
-        return safeId === String(placeId);
-      });
+    (window as any).addPlaceToTrip = async (placeId: string) => {
+      // 1. 방금 검색한 장소 리스트에서 해당 장소 데이터 찾기
+      const place = allFoundPlacesRef.current.find(
+        (p) => String(p.id) === String(placeId),
+      );
+      if (!place) return;
 
-      if (place) {
-        setSelectedPlaces((prev) => {
-          const isDuplicate = prev.some((p) => {
-            const pId = String(
-              p.id || p.placeId || p.contentid || p.contentId || p.title,
-            );
-            return pId === String(placeId);
-          });
-          if (isDuplicate) return prev;
-          return [...prev, place];
-        });
-        toast.success(`✅ '${place.title}'이(가) 리스트에 추가되었습니다!`);
+      // 2. 이미 추가된 장소인지 중복 체크 (이름 기준)
+      const isDuplicate = selectedPlaces.some(
+        (p) => p.title === place.place_name,
+      );
+      if (isDuplicate) {
+        toast.error(`이미 추가된 장소입니다!`);
+        return;
+      }
+
+      // 3. 백엔드 명세서에 딱 맞춘 Payload 조립!
+      const payload = {
+        roomId: safeRoomId,
+        places: [
+          {
+            title: place.place_name,
+            lat: Number(place.y), // 카카오는 y가 위도
+            lng: Number(place.x), // 카카오는 x가 경도
+          },
+        ],
+      };
+
+      try {
+        // 1. 백엔드로 POST 전송 (Axios가 알아서 처리해 줍니다!)
+        await searchApi.addPlacesBulk(payload);
+
+        // 2. 에러 없이 여기까지 내려왔다면 전송 성공! 내 화면(UI) 바구니에 추가
+        setSelectedPlaces((prev) => [
+          ...prev,
+          {
+            id: place.id,
+            title: place.place_name,
+            lat: place.y,
+            lng: place.x,
+          }, // 사이드바에서 쓸 수 있게 모양 맞춰주기
+        ]);
+        toast.success(
+          `✅ '${place.place_name}'이(가) 리스트에 추가되었습니다!`,
+        );
+      } catch (error) {
+        // 3. 서버가 거절하거나 에러가 나면 알아서 이쪽으로 빠집니다.
+        console.error("장소 추가 실패:", error);
+        toast.error("장소 추가 중 오류가 발생했습니다.");
       }
     };
-  }, []);
-
-  /** 🌟 방 진입 시 일정 불러오기 (원복된 엄격한 파서) */
+  }, [safeRoomId, selectedPlaces]);
+  /** 🌟 방 진입 시 일정 불러오기 */
   const loadExistingPlan = async () => {
     try {
       const res: any = await travelApi.getLatestPlan(safeRoomId);
@@ -442,11 +516,9 @@ export default function TripWorkspace() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log("🔥 [웹소켓 수신 전체 데이터]", data);
-      console.log(`내 아이디: [${myLoginId}], 보낸사람: [${data.sender}]`);
 
       // 1. 서버가 CHAT으로 보낸 경우
       if (data.type === "CHAT") {
-        // 🌟 3. 꼼수 코드 싹 다 날리고 순수하게 채팅만 띄웁니다!
         if (data.sender !== myLoginId || data.sender === "SYSTEM") {
           setMessages((prev) => [...prev, data]);
         }
@@ -454,55 +526,155 @@ export default function TripWorkspace() {
       // 2. 서버가 PLACES로 보낸 경우 (AI 장소 추출)
       else if (data.type === "PLACES") {
         if (data.places && data.places.length > 0) {
-          toast.success(`📍 AI가 장소를 인식했어요: ${data.places.join(", ")}`);
-          const aiPlaces = data.places.map(
-            (placeName: string, index: number) => ({
-              id: `ai-place-${Date.now()}-${index}`,
-              title: placeName,
-              mapx: mapInstance.current?.getCenter().getLng() || 126.570667,
-              mapy: mapInstance.current?.getCenter().getLat() || 33.450701,
-            }),
+          toast.success(
+            `🤖 AI가 대화에서 장소를 감지했어요!\n진짜 장소인지 확인 후 추가할게요! 🔍`,
           );
 
-          setSelectedPlaces((prev) => {
-            const existing = prev.map((p) => p.title);
-            const newPlaces = aiPlaces.filter(
-              (np: any) => !existing.includes(np.title),
+          const { kakao } = window as any;
+          const ps = new kakao.maps.services.Places();
+          const center = mapInstance.current?.getCenter();
+
+          // AI가 뽑아준 장소 이름들을 하나씩 카카오 지도에 검색해 봅니다!
+          data.places.forEach((placeName: string) => {
+            ps.keywordSearch(
+              placeName,
+              async (result: any, status: any) => {
+                if (status === kakao.maps.services.Status.OK) {
+                  const bestMatch = result[0]; // 가장 정확도 높은 첫 번째 장소를 선택!
+
+                  // 백엔드 명세서에 맞춘 Payload 조립
+                  const payload = {
+                    roomId: safeRoomId,
+                    places: [
+                      {
+                        title: bestMatch.place_name,
+                        lat: Number(bestMatch.y), // 🚨 사이드바가 인식하도록 정확히 lat, lng로 변환!
+                        lng: Number(bestMatch.x),
+                      },
+                    ],
+                  };
+
+                  try {
+                    // 🌟 1. 백엔드로 POST 전송 (새로고침해도 안 날아가게 DB에 확실하게 저장!)
+                    await searchApi.addPlacesBulk(payload);
+
+                    // 🌟 2. 내 화면(사이드바) 리스트에 추가!
+                    setSelectedPlaces((prev) => {
+                      // 이미 바구니에 있는 장소면 패스 (중복 방지)
+                      const isExist = prev.some(
+                        (p) =>
+                          p.id === bestMatch.id ||
+                          p.title === bestMatch.place_name,
+                      );
+                      if (isExist) return prev;
+
+                      toast.success(
+                        `✨ AI가 '${bestMatch.place_name}'을(를) 바구니에 담았습니다!`,
+                      );
+                      return [
+                        ...prev,
+                        {
+                          id: bestMatch.id,
+                          title: bestMatch.place_name,
+                          lat: Number(bestMatch.y),
+                          lng: Number(bestMatch.x),
+                        },
+                      ];
+                    });
+                  } catch (error) {
+                    console.error("AI 장소 자동 추가 실패:", error);
+                  }
+                }
+              },
+              { location: center, radius: 10000 }, // 현재 화면 중심 10km 반경 우선 검색
             );
-            return [...prev, ...newPlaces];
           });
         }
       }
-
-      // 🚨 기존에 있던 CHANGE_MODE 부분은 백엔드가 보내주지 않으므로 완전히 삭제했습니다.
     };
 
     return () => socket.close();
   }, [safeRoomId, myLoginId]);
 
-  /** Web Speech API */
+  // /** Web Speech API */
+  // useEffect(() => {
+  //   const SpeechRecognition =
+  //     (window as any).SpeechRecognition ||
+  //     (window as any).webkitSpeechRecognition;
+  //   if (SpeechRecognition && isMicActive) {
+  //     const recognition = new SpeechRecognition();
+  //     recognition.continuous = true;
+  //     recognition.interimResults = true;
+  //     recognition.lang = "ko-KR";
+
+  //     recognition.onresult = (event: any) => {
+  //       for (let i = event.resultIndex; i < event.results.length; ++i) {
+  //         if (event.results[i].isFinal) {
+  //           const transcript = event.results[i][0].transcript;
+
+  //           // 🌟 1. [핵심 추가] 서버로 보내기 전에 내 화면에 0.1초 만에 바로 띄워버리기!!!
+  //           setMessages((prev) => [
+  //             ...prev,
+  //             { type: "CHAT", sender: myLoginId, text: transcript },
+  //           ]);
+
+  //           // 2. 서버로는 원래대로 조용히 전송~
+  //           if (ws.current?.readyState === WebSocket.OPEN) {
+  //             ws.current.send(
+  //               JSON.stringify({
+  //                 type: "CHAT",
+  //                 roomId: safeRoomId,
+  //                 sender: myLoginId,
+  //                 text: transcript,
+  //               }),
+  //             );
+  //           }
+  //         }
+  //       }
+  //     };
+
+  //     recognition.onend = () => {
+  //       if (isMicActive) {
+  //         try {
+  //           recognition.start();
+  //         } catch (e) {}
+  //       }
+  //     };
+
+  //     recognitionRef.current = recognition;
+  //     recognition.start();
+  //   } else if (!isMicActive && recognitionRef.current) {
+  //     recognitionRef.current.stop();
+  //   }
+  // }, [safeRoomId, myLoginId, isMicActive]);
+  /** Web Speech API (프론트 독재 버전 🚀) */
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition && isMicActive) {
-      const recognition = new SpeechRecognition();
+    if (!SpeechRecognition) return;
+
+    let recognition: any = null;
+
+    if (isMicActive) {
+      recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = "ko-KR";
 
-      recognition.onresult = (event: any) => {
+      // 🚨 콜백 함수를 async로 변경!
+      recognition.onresult = async (event: any) => {
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
 
-            // 🌟 1. [핵심 추가] 서버로 보내기 전에 내 화면에 0.1초 만에 바로 띄워버리기!!!
+            // 1. 내 화면 채팅창에 즉시 띄우기
             setMessages((prev) => [
               ...prev,
               { type: "CHAT", sender: myLoginId, text: transcript },
             ]);
 
-            // 2. 서버로는 원래대로 조용히 전송~
+            // 2. 다른 사람들도 볼 수 있게 웹소켓으로 전송
             if (ws.current?.readyState === WebSocket.OPEN) {
               ws.current.send(
                 JSON.stringify({
@@ -513,23 +685,103 @@ export default function TripWorkspace() {
                 }),
               );
             }
+
+            // ========================================================
+            // 🔥 3. [프론트엔드 단독 처리] LLM 돌려서 장소 추출 & 바구니 담기!
+            // ========================================================
+            const extractedPlaces = await extractPlacesWithLLM(transcript);
+
+            if (extractedPlaces && extractedPlaces.length > 0) {
+              toast.success(
+                `🤖 내가 프론트에서 장소(${extractedPlaces.join(", ")})를 뜯어냈어요!\n추가할게요! 🔍`,
+              );
+
+              const { kakao } = window as any;
+              if (!kakao || !kakao.maps || !kakao.maps.services) return;
+
+              const ps = new kakao.maps.services.Places();
+              const center = mapInstance.current?.getCenter();
+              const searchOptions = center
+                ? { location: center, radius: 10000 }
+                : {};
+
+              extractedPlaces.forEach((placeName: string) => {
+                ps.keywordSearch(
+                  placeName,
+                  async (result: any, status: any) => {
+                    if (status === kakao.maps.services.Status.OK) {
+                      const bestMatch = result[0];
+
+                      const newPlace = {
+                        id: bestMatch.id,
+                        title: bestMatch.place_name,
+                        lat: Number(bestMatch.y),
+                        lng: Number(bestMatch.x),
+                      };
+
+                      // 🌟 낙관적 업데이트: 내 바구니에 먼저 박아버리기!
+                      setSelectedPlaces((prev) => {
+                        const isExist = prev.some(
+                          (p) =>
+                            p.id === newPlace.id || p.title === newPlace.title,
+                        );
+                        if (isExist) return prev;
+
+                        toast.success(
+                          `✨ 프론트가 멱살 잡고 '${newPlace.title}' 추가 성공!`,
+                        );
+                        return [...prev, newPlace];
+                      });
+
+                      // 🌟 백엔드 DB에 조용히 저장시키기 (상준님 API)
+                      try {
+                        await searchApi.addPlacesBulk({
+                          roomId: safeRoomId,
+                          places: [
+                            {
+                              title: newPlace.title,
+                              lat: newPlace.lat,
+                              lng: newPlace.lng,
+                            },
+                          ],
+                        });
+                      } catch (err) {
+                        console.error("백엔드 저장 실패:", err);
+                      }
+                    }
+                  },
+                  searchOptions,
+                );
+              });
+            }
           }
         }
       };
 
+      recognition.onerror = (event: any) => {
+        console.warn("STT 엔진 에러 발생 (재시작 시도):", event.error);
+      };
+
       recognition.onend = () => {
-        if (isMicActive) {
+        if (isMicActive && recognition) {
           try {
             recognition.start();
           } catch (e) {}
         }
       };
 
-      recognitionRef.current = recognition;
       recognition.start();
-    } else if (!isMicActive && recognitionRef.current) {
-      recognitionRef.current.stop();
+      recognitionRef.current = recognition;
     }
+
+    return () => {
+      if (recognition) {
+        recognition.onend = null;
+        recognition.onerror = null;
+        recognition.stop();
+        recognitionRef.current = null;
+      }
+    };
   }, [safeRoomId, myLoginId, isMicActive]);
 
   /** Agora 초기화 */
@@ -701,28 +953,43 @@ export default function TripWorkspace() {
 
   const handleMicToggle = async () => {
     if (!agoraClient.current) return;
+
     try {
       if (!isMicActive) {
-        const track = await AgoraRTC.createMicrophoneAudioTrack();
-        localAudioTrack.current = track;
-        await agoraClient.current.publish(track);
+        // 🟢 [마이크 켜기]
+        if (!localAudioTrack.current) {
+          // 1. 처음 켤 때만 마이크 기계를 새로 만듭니다 (옵션 유지!)
+          const track = await AgoraRTC.createMicrophoneAudioTrack({
+            AEC: true, // 하울링 방지
+            ANS: true, // 노이즈 캔슬링
+            AGC: true, // 자동 볼륨 조절
+          });
+          localAudioTrack.current = track;
+          await agoraClient.current.publish(track);
+        } else {
+          // 2. 이미 만들어둔 기계가 있다면, 전원만 다시 켭니다! (엄청 빠름)
+          await localAudioTrack.current.setEnabled(true);
+        }
+
         setIsMicActive(true);
         setParticipants((prev) =>
           prev.map((p) => (p.id === myLoginId ? { ...p, isMuted: false } : p)),
         );
       } else {
+        // 🔴 [마이크 끄기 (Mute)]
         if (localAudioTrack.current) {
-          await agoraClient.current.unpublish(localAudioTrack.current);
-          localAudioTrack.current.stop();
-          localAudioTrack.current.close();
+          // 연결을 끊고 부수는 게 아니라, 기계 전원만 살짝 꺼둡니다 (음소거 상태)
+          await localAudioTrack.current.setEnabled(false);
         }
+
         setIsMicActive(false);
         setParticipants((prev) =>
           prev.map((p) => (p.id === myLoginId ? { ...p, isMuted: true } : p)),
         );
       }
     } catch (err) {
-      console.error(err);
+      console.error("마이크 토글 에러:", err);
+      toast.error("마이크 상태를 변경하는 중 오류가 발생했습니다.");
     }
   };
 
@@ -802,7 +1069,7 @@ export default function TripWorkspace() {
   const handleProfileClick = (targetUid: string) => {
     // 1. 내 프로필을 눌렀을 때는 무시
     if (String(targetUid) === String(myLoginId)) {
-      toast.error("이것은 내 프로필입니다.");
+      toast.error("내 프로필으로는 위치 이동할 수 없습니다!");
       return;
     }
 
@@ -908,8 +1175,8 @@ export default function TripWorkspace() {
           infoWindowInstance.current.setMap(mapInstance.current);
         };
       });
-
       // 선(Polyline) 그리기 로직 (기존과 동일)
+
       days.forEach((dateString, dayIndex) => {
         if (
           selectedDay !== null &&
@@ -917,88 +1184,172 @@ export default function TripWorkspace() {
           selectedDay !== dayIndex + 1
         )
           return;
+
         const dayItems = planData.filter(
           (p) => `${p.month}/${p.day}` === dateString,
         );
+
         if (dayItems.length === 0) return;
 
         const linePath = dayItems.map(
           (item) => new kakao.maps.LatLng(item.lat, item.lng),
         );
+
         const polyline = new kakao.maps.Polyline({
           path: linePath,
+
           strokeWeight: 5,
+
           strokeColor:
             selectedDay === null || viewMode === "map" || showSearchUI
               ? DAY_COLORS[dayIndex % DAY_COLORS.length]
               : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length], // 👈 핵심 수정 부분!
+
           strokeOpacity: viewMode === "map" || showSearchUI ? 0.3 : 0.8,
+
           strokeStyle: "solid",
         });
+
         polyline.setMap(mapInstance.current);
+
         polylineInstances.current.push(polyline);
       });
+      // // ==========================================
+      // // 🚀 [업그레이드] 실제 자동차 도로(내비게이션) 선 그리기!
+      // // ==========================================
+      // const drawDrivingRoutes = async () => {
+      //   const { kakao } = window as any;
+
+      //   for (let dayIndex = 0; dayIndex < days.length; dayIndex++) {
+      //     const dateString = days[dayIndex];
+      //     if (
+      //       selectedDay !== null &&
+      //       viewMode === "plan" &&
+      //       selectedDay !== dayIndex + 1
+      //     )
+      //       continue;
+
+      //     const dayItems = planData.filter(
+      //       (p) => `${p.month}/${p.day}` === dateString,
+      //     );
+      //     if (dayItems.length < 2) continue; // 장소가 2개 이상이어야 길을 찾음!
+
+      //     let linePath: any[] = [];
+
+      //     try {
+      //       // 1. 출발지, 도착지, 경유지(최대 30개) 좌표 뽑기
+      //       // 🚨 주의: 카카오 길찾기 API는 무조건 '경도(x),위도(y)' 순서로 적어야 합니다!
+      //       const origin = `${dayItems[0].lng},${dayItems[0].lat}`;
+      //       const destination = `${dayItems[dayItems.length - 1].lng},${dayItems[dayItems.length - 1].lat}`;
+      //       const waypoints = dayItems
+      //         .slice(1, -1)
+      //         .map((item) => `${item.lng},${item.lat}`)
+      //         .join("|");
+
+      //       const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin}&destination=${destination}${waypoints ? `&waypoints=${waypoints}` : ""}`;
+
+      //       // 2. 카카오 모빌리티 길찾기 서버에 요청!
+      //       const response = await fetch(url, {
+      //         headers: {
+      //           // 🚨 주의: 유진님의 REST API 키를 여기에 넣으세요! (KakaoAK 뒤에 띄어쓰기 필수)
+      //           Authorization: `KakaoAK 유진님의_REST_API_키`,
+      //         },
+      //       });
+
+      //       const data = await response.json();
+
+      //       // 3. 응답받은 실제 도로의 꼬불꼬불한 좌표(vertexes)들을 지도 좌표 배열로 변환
+      //       if (data.routes && data.routes[0]) {
+      //         data.routes[0].sections.forEach((section: any) => {
+      //           section.roads.forEach((road: any) => {
+      //             const vertexes = road.vertexes;
+      //             // vertexes는 [x1, y1, x2, y2...] 형태로 평면 배열로 들어옵니다.
+      //             for (let i = 0; i < vertexes.length; i += 2) {
+      //               linePath.push(
+      //                 new kakao.maps.LatLng(vertexes[i + 1], vertexes[i]),
+      //               ); // 다시 위도(y), 경도(x)로 변환
+      //             }
+      //           });
+      //         });
+      //       } else {
+      //         throw new Error("경로를 찾을 수 없음");
+      //       }
+      //     } catch (error) {
+      //       console.warn(
+      //         "자동차 길찾기 실패 (바다를 건너거나 길이 없는 경우), 직선으로 대체합니다.",
+      //         error,
+      //       );
+      //       // 에러 나면 기존처럼 그냥 점과 점을 잇는 직선으로 대체! (보험)
+      //       linePath = dayItems.map(
+      //         (item) => new kakao.maps.LatLng(item.lat, item.lng),
+      //       );
+      //     }
+
+      //     // 4. 추출한 수백 개의 좌표들로 정교한 폴리라인(선) 그리기
+      //     const polyline = new kakao.maps.Polyline({
+      //       path: linePath,
+      //       strokeWeight: 5,
+      //       strokeColor:
+      //         selectedDay === null || viewMode === "map" || showSearchUI
+      //           ? DAY_COLORS[dayIndex % DAY_COLORS.length]
+      //           : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length],
+      //       strokeOpacity: viewMode === "map" || showSearchUI ? 0.3 : 0.8,
+      //       strokeStyle: "solid",
+      //     });
+
+      //     polyline.setMap(mapInstance.current);
+      //     polylineInstances.current.push(polyline);
+      //   }
+      // };
+
+      // // 비동기 함수 실행!
+      // drawDrivingRoutes();
     }
 
     // ==========================================
-    // 2. 검색 결과 렌더링 (세련된 기본 핀으로 교체)
+    // 2. 검색 결과 렌더링 (카카오 데이터 포맷에 맞춤)
     // ==========================================
     if ((viewMode === "map" || showSearchUI) && searchResults.length > 0) {
+      // 검색 기록 보관 (addPlaceToTrip 함수에서 꺼내 쓰기 위함)
       const newPlaces = searchResults.filter(
         (p) =>
-          !allFoundPlacesRef.current.some(
-            (existing) => existing.title === p.title,
-          ),
+          !allFoundPlacesRef.current.some((existing) => existing.id === p.id),
       );
       allFoundPlacesRef.current = [...allFoundPlacesRef.current, ...newPlaces];
 
-      // 🌟 검색 마커용 커스텀 SVG 아이콘 (클러스터링 호환용)
+      // 검색 마커 이미지 설정 (유진님이 쓰시던 SVG 유지)
       const searchMarkerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="38" viewBox="0 0 36 42"><path d="M18 0C8.059 0 0 8.059 0 18c0 10.5 18 24 18 24s18-13.5 18-24C36 8.059 27.941 0 18 0zm0 25c-3.866 0-7-3.134-7-7s3.134-7 7-7 7 3.134 7 7-3.134 7-7 7z" fill="#4967fe" stroke="white" stroke-width="2.5"/><circle cx="18" cy="18" r="4" fill="white"/></svg>`;
       const searchMarkerImageSrc = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(searchMarkerSvg)}`;
-      const imageSize = new kakao.maps.Size(32, 38);
       const markerImage = new kakao.maps.MarkerImage(
         searchMarkerImageSrc,
-        imageSize,
-        {
-          offset: new kakao.maps.Point(16, 38),
-        },
+        new kakao.maps.Size(32, 38),
+        { offset: new kakao.maps.Point(16, 38) },
       );
 
       searchResults.forEach((place) => {
-        const safeId =
-          place.id ||
-          place.placeId ||
-          place.contentid ||
-          place.contentId ||
-          place.title;
-        const pos = new kakao.maps.LatLng(
-          place.mapy || place.lat,
-          place.mapx || place.lng,
-        );
+        const safeId = place.id;
+        const pos = new kakao.maps.LatLng(place.y, place.x); // 🌟 카카오는 y, x입니다!
         bounds.extend(pos);
         hasBounds = true;
 
         const marker = new kakao.maps.Marker({
           position: pos,
-          image: markerImage, // 🌟 여기서 커스텀 이미지를 적용!
+          image: markerImage,
         });
 
         kakao.maps.event.addListener(marker, "click", () => {
-          // 🌟 검색 결과 데이터에서 사진 URL 뽑아오기 (Tour API는 주로 firstimage 필드에 사진이 있습니다)
-          const imageUrl =
-            place.firstimage || place.imageUrl || place.firstImage || "";
+          // 카카오 장소 검색은 이미지가 기본 제공되지 않으므로 주소를 넣어줍니다.
+          const addressText =
+            place.road_address_name || place.address_name || "";
 
-          // 🌟 사진이 있으면 img 태그 생성, 없으면 빈 문자열
-          const imageHtml = imageUrl
-            ? `<img src="${imageUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px;" alt="${place.title}" />`
-            : ``;
-
-          // 🌟 AI 일정 핀과 동일한 너비(220px)와 스타일을 주어 디자인을 통일합니다!
+          // 🌟 추가하기 버튼이 포함된 인포윈도우!
           const content = `<div style="padding:15px; font-size:14px; width:220px; border-radius:12px; box-sizing:border-box;">
-            ${imageHtml}
-            <h4 style="margin:0 0 5px 0; font-size:15px; font-weight:bold; color:#1f2937; line-height:1.3; word-break:keep-all;">${place.title}</h4>
-            </div>`;
-          // <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px; transition:0.2s;">장소 추가하기</button>
+            <h4 style="margin:0 0 5px 0; font-size:15px; font-weight:bold; color:#1f2937; line-height:1.3; word-break:keep-all;">${place.place_name}</h4>
+            <p style="margin:0 0 10px 0; font-size:12px; color:#6b7280; line-height:1.4;">${addressText}</p>
+            <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; transition:0.2s;">
+              장소 추가하기
+            </button>
+          </div>`;
 
           infoWindowInstance.current.setContent(content);
           infoWindowInstance.current.open(mapInstance.current, marker);
@@ -1006,7 +1357,6 @@ export default function TripWorkspace() {
         clustererInstance.current.addMarker(marker);
       });
     }
-
     if (hasBounds && autoFitBoundsRef.current) {
       mapInstance.current.setBounds(bounds);
       autoFitBoundsRef.current = false; // 이동 후 즉시 플래그 꺼서 자유롭게 볼 수 있게 만듦
@@ -1024,6 +1374,7 @@ export default function TripWorkspace() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isChatActive]);
 
+  /** 🌟 카카오맵 다이렉트 검색 로직 */
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!mapInstance.current || !keyword.trim()) return;
@@ -1032,90 +1383,82 @@ export default function TripWorkspace() {
     const ps = new kakao.maps.services.Places();
     const center = mapInstance.current.getCenter();
 
+    // 내 지도 중심을 기준으로 검색
     const searchOptions = {
       location: center,
-      radius: 20000,
-      sort: kakao.maps.services.SortBy.ACCURACY,
+      radius: 5000, // 5km 반경
     };
 
     ps.keywordSearch(
       keyword.trim(),
-      async (data: any, status: any) => {
+      (data: any, status: any) => {
         if (status === kakao.maps.services.Status.OK) {
-          const searchLat = Number(data[0].y);
-          const searchLng = Number(data[0].x);
+          // 1. 검색 결과 상태에 저장
+          setSearchResults(data);
+          setIsCatOpen(false); // 드롭다운 닫기
 
-          try {
-            const res = await searchApi.searchPlaces({
-              category:
-                selectedCat.id === "all" ? undefined : String(selectedCat.id),
-              keyword: String(keyword.trim()),
-              lat: Number(searchLat.toFixed(6)),
-              lng: Number(searchLng.toFixed(6)),
-              radius: 20000,
-              roomId: safeRoomId,
-            });
-
-            if (!res.data || res.data.length === 0) {
-              toast.error(`'${keyword}'에 대한 여행지 데이터가 없습니다.`);
-              return;
-            }
-
-            // 🚨 필터망 가동!
-            const validData = filterPastFestivals(res.data, selectedCat.id);
-
-            if (!validData || validData.length === 0) {
-              toast.error(
-                `'${keyword}'에 대한 (현재 진행 중인) 여행지 데이터가 없습니다.`,
-              );
-              return;
-            }
-
-            setSearchResults(validData); // 👈 걸러진 데이터만 넣기!
-            setIsCatOpen(false);
-            mapInstance.current.panTo(
-              new kakao.maps.LatLng(searchLat, searchLng),
-            );
-          } catch (error) {
-            console.error("검색 실패:", error);
-          }
+          // 2. 검색된 장소들이 한 화면에 다 보이도록 지도 영역(Bounds) 넓히기
+          const bounds = new kakao.maps.LatLngBounds();
+          data.forEach((place: any) => {
+            bounds.extend(new kakao.maps.LatLng(place.y, place.x));
+          });
+          mapInstance.current.setBounds(bounds);
+        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+          toast.error(`'${keyword}'에 대한 검색 결과가 없습니다.`);
         } else {
-          toast.error("카카오 지도에서 위치를 찾을 수 없습니다.");
+          toast.error("카카오 지도 검색 중 오류가 발생했습니다.");
         }
       },
       searchOptions,
     );
   };
 
-  const handleNearbySearch = async (cat: string) => {
+  /** 🌟 카카오 카테고리(주변) 검색 다이렉트 호출 */
+  const handleNearbySearch = async (catId: string) => {
     if (!mapInstance.current) return;
+
+    const { kakao } = window as any;
+    const ps = new kakao.maps.services.Places();
     const center = mapInstance.current.getCenter();
+    const radius = 2000; // 2km 반경
 
-    try {
-      const res = await searchApi.getNearbyPlaces({
-        lat: Number(center.getLat().toFixed(6)),
-        lng: Number(center.getLng().toFixed(6)),
-        radius: 2000,
-        categories: cat,
-        roomId: safeRoomId,
-      } as any);
+    // 1. 카카오 카테고리 코드 가져오기
+    const kakaoCode = KAKAO_CATEGORY_MAP[catId];
 
-      if (!res.data || res.data.length === 0) {
+    // 🌟 카카오 지도 검색 완료 후 실행될 공통 콜백 함수
+    const searchCallback = (data: any, status: any) => {
+      if (status === kakao.maps.services.Status.OK) {
+        setSearchResults(data);
+
+        // 검색된 장소들이 한 화면에 다 보이도록 줌 아웃/인
+        const bounds = new kakao.maps.LatLngBounds();
+        data.forEach((place: any) => {
+          bounds.extend(new kakao.maps.LatLng(place.y, place.x));
+        });
+        mapInstance.current.setBounds(bounds);
+
+        toast.success("주변 장소를 찾았습니다! 📍");
+      } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
         toast.error("주변에 해당 장소가 없습니다.");
-        return;
+      } else {
+        toast.error("카카오 지도 검색 중 오류가 발생했습니다.");
       }
+    };
 
-      // 🚨 필터망 가동!
-      const validData = filterPastFestivals(res.data, cat);
-
-      if (!validData || validData.length === 0) {
-        toast.error("주변에 (현재 진행 중인) 해당 장소가 없습니다.");
-        return;
-      }
-      setSearchResults(validData); // 👈 걸러진 데이터만 넣기!
-    } catch (error) {
-      console.error("주변 검색 실패:", error);
-      toast.error("주변 장소를 불러오지 못했습니다.");
+    // 2. 검색 분기 처리 (코드가 있으면 카테고리 검색, 없으면 키워드 검색)
+    if (kakaoCode) {
+      // ✅ 카테고리 코드가 있는 경우 (음식점, 숙박 등) -> 더 정확함!
+      ps.categorySearch(kakaoCode, searchCallback, {
+        location: center,
+        radius: radius,
+      });
+    } else {
+      // ✅ 카테고리 코드가 없는 경우 (레포츠 등) -> 현재 위치 기반 '키워드 검색'으로 대체
+      const catLabel = CATEGORIES.find((c) => c.id === catId)?.label || "";
+      ps.keywordSearch(catLabel, searchCallback, {
+        location: center,
+        radius: radius,
+      });
     }
   };
   // 🌟 [추가] planData에서 고유한 날짜(MM/DD)들만 순서대로 쏙쏙 뽑아냅니다!

@@ -6,6 +6,7 @@ import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import JoinPage from "./pages/JoinPage";
 import TripWorkspace from "./pages/TripWorkspace";
+// import TestMapPage from "./pages/TestMapPage";
 
 export default function App() {
   const isAuthenticated = !!localStorage.getItem("accessToken");
@@ -39,6 +40,7 @@ export default function App() {
         />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/join/:roomId" element={<JoinPage />} />
+        {/* <Route path="/test-map" element={<TestMapPage />} /> */}
 
         {/* ⚠️ 잘못된 주소로 들어오면 무조건 홈으로 보냅니다 */}
         <Route path="*" element={<Navigate to="/" replace />} />
