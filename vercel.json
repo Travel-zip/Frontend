@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/proxy/ennoia/:path*",
+      "destination": "https://api.ennoia.so/api/preset/v2/:path*"
+    }
+  ]
+}

@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // 🌟 토스 스타일을 위해 currentColor를 사용하여 색상 동기화
+  // 토스 스타일을 위해 currentColor를 사용하여 색상 동기화
   const LocationPinIcon = ({ className = "" }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -199,7 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* 🌟 메인 컨텐츠 영역 */}
+      {/* 메인 컨텐츠 영역 */}
       <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide flex flex-col pt-2">
         {/* 리스트 제목 */}
         {isExpanded && (
@@ -208,7 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {mode === "plan" ? "AI 추천 일정" : listTitle}
             </span>
 
-            {/* 👇 🌟 여행 날짜가 있으면 예쁜 배지로 띄워줍니다! 👇 */}
+            {/* 여행 날짜가 있으면 배지 */}
             {dateRange && mode !== "plan" && (
               <div className="flex items-center gap-1.5 text-primary-600 bg-primary-50 w-fit px-2.5 py-1 rounded-md mt-1">
                 <span className="text-[12px] font-extrabold tracking-tight">
@@ -218,7 +218,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
         )}
-        {/* 🌟 모드 1: 방 목록 (List) */}
+        {/* 모드 1: 방 목록 (List) */}
         {mode === "list" && (
           <div className="flex flex-col gap-1 w-full px-3 pb-6">
             {rooms.map((room) => {

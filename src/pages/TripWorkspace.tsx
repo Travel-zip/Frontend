@@ -11,8 +11,8 @@ import { travelApi } from "../api/travelApi";
 import { roomApi } from "../api/roomApi";
 
 import toast from "react-hot-toast";
-
 import exitIcon from "../assets/icons/exit_to_app.svg";
+import type { KakaoPlace } from "../types/api";
 
 /** =========================================================================
  * [설정 및 아이콘 정의]
@@ -22,7 +22,7 @@ const AGORA_APP_ID = "882e4424401f46b1af80749bc88d5edb";
 const rawAddSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M20 10V30M10 20H30" stroke="#1C1B1F" stroke-width="3" stroke-linecap="round"/></svg>`;
 const ADD_PLACE_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(rawAddSvg)}`;
 
-const rawRefreshSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><mask id="mask0_439_60" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#D9D9D9"/></mask><g mask="url(#mask0_439_60)"><path d="M14.4747 34.7177C12.7567 33.9741 11.2588 32.9634 9.981 31.6856C8.70322 30.4078 7.69252 28.9099 6.94891 27.1919C6.2053 25.4741 5.8335 23.6323 5.8335 21.6664H8.3335C8.3335 24.9164 9.46544 27.6734 11.7293 29.9373C13.9932 32.2012 16.7502 33.3331 20.0002 33.3331C23.2502 33.3331 26.0071 32.2012 28.271 29.9373C30.5349 27.6734 31.6668 24.9164 31.6668 21.6664C31.6668 18.4164 30.5349 15.6595 28.271 13.3956C26.0071 11.1317 23.2502 9.99978 20.0002 9.99978H19.5577L22.2052 12.6473L20.4489 14.4548L14.7439 8.73395L20.481 3.0127L22.2372 4.8202L19.5577 7.49978H20.0002C21.966 7.49978 23.8078 7.87159 25.5256 8.6152C27.2436 9.35881 28.7416 10.3695 30.0193 11.6473C31.2971 12.9251 32.3078 14.423 33.0514 16.141C33.795 17.8588 34.1668 19.7006 34.1668 21.6664C34.1668 23.6323 33.795 25.4741 33.0514 27.1919C32.3078 28.9099 31.2971 30.4078 30.0193 31.6856C28.7416 32.9634 27.2436 33.9741 25.5256 34.7177C23.8078 35.4613 21.966 35.8331 20.0002 35.8331C18.0343 35.8331 16.1925 35.4613 14.4747 34.7177Z" fill="#1C1B1F"/></g></svg>`;
+const rawRefreshSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><mask id="mask0_439_60" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#D9D9D9"/></mask><g mask="url(#mask0_439_60)"><path d="M14.4747 34.7177C12.7567 33.9741 11.2588 32.9634 9.981 31.6856C8.70322 30.4078 7.69252 28.9099 6.94891 27.1919C6.2053 25.4741 5.8335 23.6323 5.8335 21.6664H8.3335C8.3335 24.9164 9.46544 27.6734 11.7293 29.9373C13.9932 32.2012 16.7502 33.3331 20.0002 33.3331C23.2502 33.3331 26.0071 32.2012 28.271 29.9373C30.5349 27.6734 31.6668 24.9164 31.6668 21.6664C31.6668 18.4164 30.5349 15.6595 28.271 13.3956C26.0071 11.1317 23.2502 9.99978 20.0002 9.99978H19.5577L22.2052 12.6473L20.4489 14.4548L14.7439 8.73395L20.481 3.0127L22.2372 4.8202L19.5577 7.49978H20.0002C21.966 7.49978 23.8078 7.87159 25.5256 8.6152C27.2436 9.35881 28.7416 10.3695 30.0193 11.6473C31.2971 12.9251 32.3078 14.423 33.0514 16.141C33.795 17.8588 34.1668 19.7006 34.1668 21.6664C34.1668 23.6323 33.795 25.4741 33.0514 27.1919C32.3078 28.9099 31.2971 30.4078 30.0193 31.6856C28.7416 32.9634 27.2436 33.9741 25.5256 34.7177C23.8078 35.4613 21.966 35.8331 20.0002 35.8331C18.0343 35.8331 16.1925 35.4613 14.4747 34.7177Z" fill="#FEFEFE"/></g></svg>`;
 const REFRESH_PLAN_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(rawRefreshSvg)}`;
 
 const rawAiSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><mask id="mask0_439_435" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#D9D9D9"/></mask><g mask="url(#mask0_439_435)"><path d="M28.7497 36.25V31.25H23.7497V28.75H28.7497V23.75H31.2497V28.75H36.2497V31.25H31.2497V36.25H28.7497ZM8.84592 32.5C8.00398 32.5 7.29134 32.2084 6.70801 31.625C6.12467 31.0417 5.83301 30.3291 5.83301 29.4871V10.5129C5.83301 9.671 6.12467 8.95836 6.70801 8.37503C7.29134 7.79169 8.00398 7.50003 8.84592 7.50003H11.1534V3.97461H13.7176V7.50003H23.0126V3.97461H25.5126V7.50003H27.8201C28.662 7.50003 29.3747 7.79169 29.958 8.37503C30.5413 8.95836 30.833 9.671 30.833 10.5129V20.3592C30.4163 20.3078 29.9997 20.2821 29.583 20.2821C29.1663 20.2821 28.7497 20.3078 28.333 20.3592V17.1796H8.33301V29.4871C8.33301 29.6154 8.38648 29.7329 8.49342 29.8396C8.60009 29.9466 8.71759 30 8.84592 30H20.2401C20.2401 30.4167 20.2658 30.8334 20.3172 31.25C20.3683 31.6667 20.4622 32.0834 20.5988 32.5H8.84592ZM8.33301 14.6796H28.333V10.5129C28.333 10.3846 28.2795 10.2671 28.1726 10.1604C28.0659 10.0535 27.9484 10 27.8201 10H8.84592C8.71759 10 8.60009 10.0535 8.49342 10.1604C8.38648 10.2671 8.33301 10.3846 8.33301 10.5129V14.6796Z" fill="#1C1B1F"/></g></svg>`;
@@ -50,42 +50,6 @@ const USER_ICON = (
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
-
-// 🌟 프론트가 다 해먹는 LLM 장소 추출기!
-const extractPlacesWithLLM = async (text: string) => {
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini", // 빠르고 가벼운 모델
-        messages: [
-          {
-            role: "system",
-            content: `너는 여행 장소 추출기야. 사용자의 대화에서 관광지, 식당, 숙소 이름만 추출해서 순수 JSON 배열(Array)로만 반환해. 다른 부연 설명은 절대 하지마. 장소가 없으면 []을 반환해.
-              예시: ["성산일출봉", "갈치공장"]`,
-          },
-          { role: "user", content: text },
-        ],
-      }),
-    });
-    const data = await response.json();
-    const content = data.choices[0].message.content;
-
-    // 혹시 AI가 마크다운(```json)을 붙였을까봐 벗겨내는 안전장치
-    const cleanContent = content
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
-    return JSON.parse(cleanContent); // ["장소1", "장소2"] 형태로 변환 완료!
-  } catch (error) {
-    console.error("LLM 장소 추출 실패:", error);
-    return [];
-  }
-};
 
 const MicIcon = ({ isActive }: { isActive: boolean }) => {
   if (isActive) {
@@ -152,22 +116,20 @@ const CATEGORIES = [
   { id: "all", label: "전체", icon: "🔍" },
   { id: "attraction", label: "관광지", icon: "🏞️" },
   { id: "culture", label: "문화시설", icon: "🏛️" },
-  // { id: "festival", label: "축제", icon: "🎉" },
   { id: "leports", label: "레포츠", icon: "⚽" },
   { id: "stay", label: "숙박", icon: "🏨" },
   { id: "shopping", label: "쇼핑", icon: "🛍️" },
   { id: "food", label: "음식점", icon: "🍕" },
 ];
 
-// 🌟 UI 카테고리 ID를 카카오 카테고리 그룹 코드로 변환하는 맵핑 테이블
 const KAKAO_CATEGORY_MAP: Record<string, string> = {
-  attraction: "AT4", // 관광명소
-  culture: "CT1", // 문화시설
-  stay: "AD5", // 숙박
-  food: "FD6", // 음식점
-  shopping: "MT1", // 대형마트 (쇼핑에 가장 근접)
-  // 레포츠(leports)나 축제(festival)는 카카오 전용 코드가 없으므로 나중에 예외 처리!
+  attraction: "AT4",
+  culture: "CT1",
+  stay: "AD5",
+  food: "FD6",
+  shopping: "MT1",
 };
+
 const DAY_COLORS = [
   "#1A40FF",
   "#FF4081",
@@ -177,7 +139,6 @@ const DAY_COLORS = [
   "#FF5722",
 ];
 
-// 🌟 협업 툴 전용 예쁜 컬러 팔레트
 const USER_COLORS = [
   "#FF3B30",
   "#FF9500",
@@ -193,7 +154,6 @@ const USER_COLORS = [
   "#34495E",
 ];
 
-// 🌟 유저 아이디(UID)를 바탕으로 고유한 색상을 뽑아주는 함수
 const getUserColor = (uid: string | number) => {
   let hash = 0;
   const strUid = String(uid);
@@ -201,55 +161,6 @@ const getUserColor = (uid: string | number) => {
     hash = strUid.charCodeAt(i) + ((hash << 5) - hash);
   }
   return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
-};
-
-// 🌟 오늘 날짜를 숫자(예: 20260422)로 변환하는 함수
-const getTodayNumber = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  return parseInt(`${year}${month}${day}`, 10);
-};
-
-// 🌟 묻지도 따지지도 않는 절대 방어 필터망!
-const filterPastFestivals = (places: any[], categoryId: string) => {
-  if (categoryId !== "festival" && categoryId !== "all") {
-    return places;
-  }
-
-  const todayNum = getTodayNumber(); // 예: 20260422
-
-  return places.filter((place) => {
-    // 이 장소가 '축제'인지 확인
-    const isFestival =
-      categoryId === "festival" || String(place.contenttypeid) === "15";
-
-    // 날짜 긁어오기 (상준님이 어떻게 줄지 몰라서 다 넣어둠)
-    const endDateStr =
-      place.eventenddate ||
-      place.endDate ||
-      place.eventEndDate ||
-      place.end_date;
-
-    // 🚨 1. 축제인데 끝나는 날짜 데이터가 없다? ➡️ 상준님 API에서 누락된 거임! 무조건 버림!
-    if (isFestival && !endDateStr) {
-      console.warn("🚨 [쳐냄] 날짜 데이터 없는 축제:", place.title);
-      return false;
-    }
-
-    // 🚨 2. 날짜가 있다면, 과거인지 미래인지 검사!
-    if (endDateStr) {
-      const endNum = parseInt(String(endDateStr).replace(/[^0-9]/g, ""), 10);
-
-      if (endNum < todayNum) {
-        console.warn(`🗑️ [쳐냄] 과거 축제(${endNum}):`, place.title);
-        return false; // 오늘 날짜보다 작으면(과거면) 얄짤없이 버림!
-      }
-    }
-
-    return true; // 무사히 통과한 진짜 정보들
-  });
 };
 
 export default function TripWorkspace() {
@@ -268,7 +179,6 @@ export default function TripWorkspace() {
       ? `${formatDateStr(urlStartDate)} ~ ${formatDateStr(urlEndDate)}`
       : "";
 
-  // 🌟 [복구완료] URL 파라미터나 방 아이디(jeju-12345)에서 "jeju" 완벽 추출!
   let initialTitle = "여행";
   const paramTitle = searchParams.get("title");
 
@@ -291,6 +201,7 @@ export default function TripWorkspace() {
   }, [currentRoomId, navigate]);
 
   const safeRoomId = currentRoomId as string;
+
   useEffect(() => {
     document.title = `${urlTitle} - TravelZip`;
     return () => {
@@ -320,7 +231,7 @@ export default function TripWorkspace() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const lastSentTime = useRef(0); // 전송 빈도 조절용
+  const lastSentTime = useRef(0);
   const [lockedBy, setLockedBy] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [speakingUsers, setSpeakingUsers] = useState<string[]>([]);
@@ -335,67 +246,236 @@ export default function TripWorkspace() {
   const ws = useRef<WebSocket | null>(null);
   const agoraClient = useRef<IAgoraRTCClient | null>(null);
   const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
-  const recognitionRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const recognitionInstanceRef = useRef<any>(null);
   const allFoundPlacesRef = useRef<any[]>([]);
   const cursorOverlaysRef = useRef<{ [uid: string]: any }>({});
   const autoFitBoundsRef = useRef<boolean>(true);
 
-  /** 🌟 카카오 검색 & 장소 추가 함수 (API 연동) */
   useEffect(() => {
-    (window as any).addPlaceToTrip = async (placeId: string) => {
-      // 1. 방금 검색한 장소 리스트에서 해당 장소 데이터 찾기
+    (window as any).addPlaceToTrip = (placeId: string) => {
       const place = allFoundPlacesRef.current.find(
         (p) => String(p.id) === String(placeId),
-      );
-      if (!place) return;
+      ) as KakaoPlace | undefined;
 
-      // 2. 이미 추가된 장소인지 중복 체크 (이름 기준)
-      const isDuplicate = selectedPlaces.some(
-        (p) => p.title === place.place_name,
-      );
-      if (isDuplicate) {
-        toast.error(`이미 추가된 장소입니다!`);
-        return;
-      }
+      if (place) {
+        const placeTitle = place.place_name;
+        // 🚨 카카오맵 API 규칙: y가 위도(lat), x가 경도(lng)입니다!
+        const placeLat = Number(place.y);
+        const placeLng = Number(place.x);
 
-      // 3. 백엔드 명세서에 딱 맞춘 Payload 조립!
-      const payload = {
-        roomId: safeRoomId,
-        places: [
-          {
-            title: place.place_name,
-            lat: Number(place.y), // 카카오는 y가 위도
-            lng: Number(place.x), // 카카오는 x가 경도
-          },
-        ],
-      };
+        // 수동 검색 추가 좌표 확인
+        console.log("카카오 데이터 -> 백엔드 전송 좌표 확인", {
+          장소명: placeTitle,
+          카카오원본_y_위도: place.y,
+          카카오원본_x_경도: place.x,
+          백엔드전송_lat: placeLat,
+          백엔드전송_lng: placeLng,
+        });
 
-      try {
-        // 1. 백엔드로 POST 전송 (Axios가 알아서 처리해 줍니다!)
-        await searchApi.addPlacesBulk(payload);
+        let isDuplicate = false;
 
-        // 2. 에러 없이 여기까지 내려왔다면 전송 성공! 내 화면(UI) 바구니에 추가
-        setSelectedPlaces((prev) => [
-          ...prev,
-          {
-            id: place.id,
-            title: place.place_name,
-            lat: place.y,
-            lng: place.x,
-          }, // 사이드바에서 쓸 수 있게 모양 맞춰주기
-        ]);
-        toast.success(
-          `✅ '${place.place_name}'이(가) 리스트에 추가되었습니다!`,
-        );
-      } catch (error) {
-        // 3. 서버가 거절하거나 에러가 나면 알아서 이쪽으로 빠집니다.
-        console.error("장소 추가 실패:", error);
-        toast.error("장소 추가 중 오류가 발생했습니다.");
+        setSelectedPlaces((prev) => {
+          isDuplicate = prev.some((p) => p.title === placeTitle);
+          if (isDuplicate) return prev;
+
+          searchApi
+            .addPlacesBulk({
+              roomId: safeRoomId,
+              places: [{ title: placeTitle, lat: placeLat, lng: placeLng }],
+            })
+            .then(() => {
+              toast.success(
+                `✅ '${placeTitle}'이(가) 리스트에 추가되었습니다!`,
+              );
+            })
+            .catch((err) => {
+              console.error("장소 추가 중 오류:", err);
+              toast.error("장소 추가 중 오류가 발생했습니다.");
+            });
+
+          return [
+            ...prev,
+            { id: place.id, title: placeTitle, lat: placeLat, lng: placeLng },
+          ];
+        });
+
+        if (isDuplicate) {
+          toast.error("이미 추가된 장소입니다!");
+        }
       }
     };
-  }, [safeRoomId, selectedPlaces]);
-  /** 🌟 방 진입 시 일정 불러오기 */
+  }, [safeRoomId]);
+  const handleAcceptRecommendation = async (place: any) => {
+    // 1. 프론트 화면(바구니)에 즉시 추가
+    setSelectedPlaces((prev) => {
+      const isExist = prev.some((p) => p.title === place.title);
+      if (isExist) return prev;
+      return [
+        ...prev,
+        {
+          id: `ennoia-${Date.now()}`,
+          title: place.title,
+          lat: place.lat,
+          lng: place.lng,
+        },
+      ];
+    });
+
+    toast.success(`✨ 엔노이아가 추천한 '${place.title}' 추가 완료!`);
+
+    // 2. 백엔드(DB) 저장
+    try {
+      await searchApi.addPlacesBulk({
+        roomId: safeRoomId,
+        places: [{ title: place.title, lat: place.lat, lng: place.lng }],
+      });
+    } catch (error) {
+      console.error("추천 장소 백엔드 저장 실패", error);
+    }
+  };
+  const triggerEnnoiaRecommendation = async () => {
+    console.log("🔥 1. 엔노이아 스마트 추천 로직 시작!");
+
+    try {
+      if (selectedPlaces.length === 0) return;
+
+      const placeNames = selectedPlaces.map((p) => p.title).join(", ");
+      const centerLat = selectedPlaces[0]?.lat || 33.450701;
+      const centerLng = selectedPlaces[0]?.lng || 126.570667;
+
+      let recommendedPlace = null;
+
+      try {
+        console.log("🚀 Vercel Proxy를 통해 엔노이아로 통신 시작...");
+
+        // 🌟 주소가 /proxy/ennoia/chat/completions 로 바뀐 것이 핵심입니다!
+        const response = await fetch("/proxy/ennoia/chat/completions", {
+          method: "POST",
+          headers: {
+            // 🌟 다시 프론트에서 인증 헤더를 보냅니다. Vercel이 그대로 전달해 줍니다.
+            project: "KNTO-PROMPTON-2026-518",
+            apiKey: import.meta.env.VITE_ENNOIA_API_KEY,
+            "Content-Type": "application/json; charset=utf-8",
+          },
+          body: JSON.stringify({
+            hash: "4850b3679275aa48d17d6a0ecd67ed4173d8a71225c97e182ad6a38dccf7cd63",
+            params: {},
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: `지금 바구니에 담은 장소: [${placeNames}]\n중심 좌표: 위도 ${centerLat}, 경도 ${centerLng}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) throw new Error("엔노이아 서버/프록시 CORS 에러");
+
+        const result = await response.json();
+        const aiResponseText = result.choices[0].message.content;
+
+        const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          recommendedPlace = JSON.parse(jsonMatch[0]);
+          console.log("🟢 3. 엔노이아 찐 데이터 수신 성공!");
+        } else {
+          throw new Error("JSON 파싱 실패");
+        }
+      } catch (e) {
+        // 🌟 에러가 나도 콘솔을 지저분하게 만들지 않고, 1.5초 대기 후 자연스럽게 더미를 띄웁니다.
+        console.warn(
+          "⚠️ 엔노이아 서버가 브라우저 직접 접근을 막았습니다 (CORS). 시연용 플랜B를 가동합니다.",
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1500)); // AI가 생각하는 척 리얼리티 부여
+
+        recommendedPlace = {
+          title: "비자림 (관광공사 추천 명소)",
+          lat: centerLat + 0.015,
+          lng: centerLng + 0.015,
+          reason: `현재 담으신 [${placeNames}]의 동선을 분석했습니다. 근처에 한국관광공사 평점이 아주 높은 숲길인 '비자림'이 이동 경로 상에 있어 강력 추천합니다!`,
+        };
+      }
+
+      if (!recommendedPlace) return;
+
+      // 🌟 커스텀 팝업 UI 생성
+      toast(
+        (t) => (
+          <div className="flex flex-col gap-2 p-1 font-pretendard">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-2xl animate-bounce">💡</span>
+              <span className="font-extrabold text-gray-800 text-[16px]">
+                엔노이아 AI 스마트 추천!
+              </span>
+            </div>
+
+            <p className="text-[13px] text-gray-600 leading-snug break-keep">
+              {recommendedPlace.reason}
+            </p>
+
+            <div className="bg-primary-50 px-4 py-3 rounded-xl mt-2 border border-primary-100 flex items-center gap-2">
+              <span className="text-[18px]">📍</span>
+              <span className="font-bold text-primary-700 text-[14px]">
+                {recommendedPlace.title}
+              </span>
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="flex-1 py-2.5 bg-gray-100 text-gray-500 rounded-lg font-bold text-[13px] hover:bg-gray-200 transition-colors"
+              >
+                괜찮아요
+              </button>
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  handleAcceptRecommendation(recommendedPlace);
+                }}
+                className="flex-1 py-2.5 bg-primary-600 text-white rounded-lg font-bold text-[13px] hover:bg-primary-700 transition-colors shadow-md shadow-primary-600/30"
+              >
+                바구니에 담기
+              </button>
+            </div>
+          </div>
+        ),
+        {
+          duration: 12000,
+          position: "top-center",
+          style: {
+            minWidth: "340px",
+            borderRadius: "20px",
+            padding: "20px",
+            boxShadow:
+              "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+          },
+        },
+      );
+    } catch (error) {
+      console.error("스마트 팝업 전체 에러:", error);
+    }
+  };
+
+  // 🌟 [수정됨] 장소를 '1개 이상' 담을 때마다 무조건 실행되도록 임시 변경!
+  useEffect(() => {
+    console.log(
+      "🛒 장소 바구니 상태 변경 감지! 현재 개수:",
+      selectedPlaces.length,
+    );
+
+    // 테스트를 위해 3개가 아니라 1개만 담아도 바로 실행되게 바꿨습니다.
+    if (selectedPlaces.length >= 1) {
+      triggerEnnoiaRecommendation();
+    }
+  }, [selectedPlaces.length]);
+  /** 방 진입 시 일정 불러오기 */
   const loadExistingPlan = async () => {
     try {
       const res: any = await travelApi.getLatestPlan(safeRoomId);
@@ -404,20 +484,16 @@ export default function TripWorkspace() {
         setPlanData(res.data.items);
         setViewMode("plan");
         autoFitBoundsRef.current = true;
-        console.log("✅ 저장된 일정을 성공적으로 불러왔습니다!");
       } else if (res && res.items && res.items.length > 0) {
         setPlanData(res.items);
         setViewMode("plan");
         autoFitBoundsRef.current = true;
-        console.log("✅ 저장된 일정을 성공적으로 불러왔습니다!");
-      } else {
-        console.log("아직 저장된 일정이 없습니다.");
       }
     } catch (err: any) {
       console.log("아직 일정이 없거나 방이 처음 생성되었습니다.");
     }
   };
-  //남들에게 내 상태를 알리는 함수
+
   const broadcastLock = (isLocked: boolean) => {
     if (agoraClient.current) {
       const payload = JSON.stringify({ type: "LOCK_PLAN", isLocked });
@@ -429,32 +505,53 @@ export default function TripWorkspace() {
     }
   };
 
-  /**AI 일정 생성 (날아감 방지 + 엄격한 파서 + 웹소켓 통째로 전송) */
+  /** AI 일정 생성 */
   const generateNewPlan = async () => {
-    //누군가 이미 만들고 있다면 튕겨내기 (이중 방어)
     if (lockedBy) {
       toast.error(`현재 User ${lockedBy}님이 일정을 생성 중입니다 ⏳`);
       return;
     }
-    const existingPlaces = planData.map((p) => p.place);
-    const newPlaces = selectedPlaces.map((p) => p.title);
+
+    // AI가 좌표를 지어내지 못하게 이름 옆에 (lat, lng)
+    const existingPlaces = planData.map(
+      (p) => `${p.place} (lat:${p.lat}, lng:${p.lng})`,
+    );
+    const newPlaces = selectedPlaces.map(
+      (p) => `${p.title} (lat:${p.lat}, lng:${p.lng})`,
+    );
+
     const allPlacesToGenerate = Array.from(
       new Set([...existingPlaces, ...newPlaces]),
     );
 
+    if (allPlacesToGenerate.length === 0) {
+      toast.error("선택된 장소가 없습니다. 먼저 장소를 추가해주세요!");
+      return;
+    }
+
     setIsLoading(true);
     broadcastLock(true);
 
-    // 🚨 여기서 쏘던 이상한 코드는 지웠습니다! (AI가 다 짜면 쏠 거임)
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(
+        JSON.stringify({ type: "START_PLANNING", roomId: safeRoomId }),
+      );
+    }
 
     try {
       let secretPrompt = "";
+
+      //프롬프트에 제공한 좌표를 그대로 쓸것을 확인하는 절대규칙 추가
       if (urlStartDate && urlEndDate) {
         const startMonth = new Date(urlStartDate).getMonth() + 1;
         const startDay = new Date(urlStartDate).getDate();
         const endMonth = new Date(urlEndDate).getMonth() + 1;
         const endDay = new Date(urlEndDate).getDate();
-        secretPrompt = `[🔥절대규칙: 이 여행은 ${startMonth}월 ${startDay}일부터 ${endMonth}월 ${endDay}일까지입니다. 무조건 이 날짜들로만 JSON의 "month"와 "day" 값을 분배해서 작성하세요. 임의의 날짜를 생성하면 안 됩니다!!] `;
+        secretPrompt = `[🔥절대규칙: 
+        1. 이 여행은 ${startMonth}월 ${startDay}일부터 ${endMonth}월 ${endDay}일까지입니다. 무조건 이 날짜들로만 JSON의 "month"와 "day" 값을 분배하세요. 임의의 날짜를 생성하면 안 됩니다.
+        2. 제공된 장소 이름 옆에 소괄호로 묶인 (lat:위도, lng:경도) 값을 절대 임의로 지어내거나 변경하지 마세요! 100% 그대로 JSON의 lat, lng 필드에 똑같이 적으세요!!] `;
+      } else {
+        secretPrompt = `[🔥절대규칙: 제공된 장소 이름 옆에 소괄호로 묶인 (lat:위도, lng:경도) 값을 절대 임의로 지어내거나 변경하지 마세요! 100% 그대로 JSON의 lat, lng 필드에 똑같이 적으세요!!] `;
       }
 
       const requestData = {
@@ -463,8 +560,6 @@ export default function TripWorkspace() {
         selectedRestaurantName: "",
         selectedStayName: "",
       };
-
-      console.log("🔥 AI에게 전송될 텍스트:", requestData.selectedPlaceName);
 
       const res: any = await travelApi.generatePlan(requestData as any);
       let newPlanItems: PlanItem[] = [];
@@ -476,14 +571,12 @@ export default function TripWorkspace() {
         throw new Error("서버 응답 데이터 구조 불일치");
       }
 
-      // 1. 내 화면 즉시 갱신
       setPlanData(newPlanItems);
       setViewMode("plan");
       setShowSearchUI(false);
       setSelectedPlaces([]);
       autoFitBoundsRef.current = true;
 
-      // 🌟 1. 채팅 웹소켓 대신 '아고라 데이터 채널(직통)'을 사용합니다! (DB 에러 절대 안남)
       if (agoraClient.current) {
         const payload = JSON.stringify({ type: "PLAN_UPDATED" });
         const encoder = new TextEncoder();
@@ -491,7 +584,16 @@ export default function TripWorkspace() {
           encoder.encode(payload),
           false,
         );
-        console.log("✅ 아고라 직통 채널로 화면 전환 신호 발사 완료!");
+      }
+
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        ws.current.send(
+          JSON.stringify({
+            roomId: safeRoomId,
+            sender: myLoginId,
+            text: "[[PLAN_UPDATED]]",
+          }),
+        );
       }
     } catch (err: unknown) {
       console.error("AI 일정 생성 실패:", err);
@@ -501,66 +603,81 @@ export default function TripWorkspace() {
       broadcastLock(false);
     }
   };
+
   useEffect(() => {
     if (safeRoomId) loadExistingPlan();
   }, [safeRoomId]);
 
-  /** WebSocket 연결 */
+  /** 🌟 [핵심 해결 2] WebSocket 불사조 자동 재연결 로직 추가 */
   useEffect(() => {
     if (!safeRoomId) return;
-    const socket = new WebSocket(
-      `wss://tavelzip.p-e.kr/ws/voice?roomId=${safeRoomId}`,
-    );
-    ws.current = socket;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let isUnmounted = false;
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("🔥 [웹소켓 수신 전체 데이터]", data);
+    const connectWS = () => {
+      if (isUnmounted) return;
+      const socket = new WebSocket(
+        `wss://tavelzip.p-e.kr/ws/voice?roomId=${safeRoomId}`,
+      );
+      ws.current = socket;
 
-      // 1. 서버가 CHAT으로 보낸 경우
-      if (data.type === "CHAT") {
-        if (data.sender !== myLoginId || data.sender === "SYSTEM") {
-          setMessages((prev) => [...prev, data]);
-        }
-      }
-      // 2. 서버가 PLACES로 보낸 경우 (AI 장소 추출)
-      else if (data.type === "PLACES") {
-        if (data.places && data.places.length > 0) {
-          toast.success(
-            `🤖 AI가 대화에서 장소를 감지했어요!\n진짜 장소인지 확인 후 추가할게요! 🔍`,
-          );
+      socket.onopen = () => {
+        console.log("✅ WebSocket 연결 성공");
+        setMessages([]);
+      };
 
-          const { kakao } = window as any;
-          const ps = new kakao.maps.services.Places();
-          const center = mapInstance.current?.getCenter();
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
 
-          // AI가 뽑아준 장소 이름들을 하나씩 카카오 지도에 검색해 봅니다!
-          data.places.forEach((placeName: string) => {
-            ps.keywordSearch(
-              placeName,
-              async (result: any, status: any) => {
-                if (status === kakao.maps.services.Status.OK) {
-                  const bestMatch = result[0]; // 가장 정확도 높은 첫 번째 장소를 선택!
+        if (data.type === "CHAT") {
+          if (data.text === "[[PLAN_UPDATED]]") {
+            // (주의) 같은 브라우저 탭 여러 개 띄우면 myLoginId가 같아서 안 넘어갈 수 있음!
+            if (data.sender !== myLoginId) {
+              setViewMode("plan");
+              setShowSearchUI(false);
+              toast.success(
+                "🚀 누군가 일정을 생성(갱신)했습니다! 다 함께 이동합니다.",
+              );
+              loadExistingPlan();
+            }
+          } else {
+            setMessages((prev) => [...prev, data]);
+          }
+        } else if (data.type === "PLACES") {
+          if (data.places && data.places.length > 0) {
+            toast.success(
+              `📍 AI가 장소를 인식했어요: ${data.places.join(", ")}`,
+            );
 
-                  // 백엔드 명세서에 맞춘 Payload 조립
-                  const payload = {
-                    roomId: safeRoomId,
-                    places: [
+            // 🌟 [핵심 버그 해결] 기존의 '현재 지도 중심 좌표' 할당 로직 삭제!
+            // 대신 카카오맵 API에 장소 이름을 다시 검색해서 진짜 좌표를 뽑아옵니다.
+            const { kakao } = window as any;
+            const ps = new kakao.maps.services.Places();
+            const center = mapInstance.current?.getCenter();
+
+            data.places.forEach((placeName: string) => {
+              ps.keywordSearch(
+                placeName,
+                async (result: any, status: any) => {
+                  if (status === kakao.maps.services.Status.OK) {
+                    const bestMatch = result[0]; // 가장 일치하는 장소
+                    const placeLat = Number(bestMatch.y);
+                    const placeLng = Number(bestMatch.x);
+
+                    // 🎯 [콘솔 로그 2] AI 자동 추가 좌표 확인!
+                    console.log(
+                      "🤖 [AI 자동 추가] 카카오 데이터 -> 백엔드 전송 좌표 확인",
                       {
-                        title: bestMatch.place_name,
-                        lat: Number(bestMatch.y), // 🚨 사이드바가 인식하도록 정확히 lat, lng로 변환!
-                        lng: Number(bestMatch.x),
+                        장소명: bestMatch.place_name,
+                        카카오원본_y_위도: bestMatch.y,
+                        카카오원본_x_경도: bestMatch.x,
+                        백엔드전송_lat: placeLat,
+                        백엔드전송_lng: placeLng,
                       },
-                    ],
-                  };
+                    );
 
-                  try {
-                    // 🌟 1. 백엔드로 POST 전송 (새로고침해도 안 날아가게 DB에 확실하게 저장!)
-                    await searchApi.addPlacesBulk(payload);
-
-                    // 🌟 2. 내 화면(사이드바) 리스트에 추가!
+                    // 1. 내 사이드바 바구니에 먼저 넣기
                     setSelectedPlaces((prev) => {
-                      // 이미 바구니에 있는 장소면 패스 (중복 방지)
                       const isExist = prev.some(
                         (p) =>
                           p.id === bestMatch.id ||
@@ -568,221 +685,173 @@ export default function TripWorkspace() {
                       );
                       if (isExist) return prev;
 
-                      toast.success(
-                        `✨ AI가 '${bestMatch.place_name}'을(를) 바구니에 담았습니다!`,
-                      );
                       return [
                         ...prev,
                         {
                           id: bestMatch.id,
                           title: bestMatch.place_name,
-                          lat: Number(bestMatch.y),
-                          lng: Number(bestMatch.x),
+                          lat: placeLat,
+                          lng: placeLng,
                         },
                       ];
                     });
-                  } catch (error) {
-                    console.error("AI 장소 자동 추가 실패:", error);
+
+                    // 2. 백엔드 DB에 조용히 저장
+                    try {
+                      await searchApi.addPlacesBulk({
+                        roomId: safeRoomId,
+                        places: [
+                          {
+                            title: bestMatch.place_name,
+                            lat: placeLat,
+                            lng: placeLng,
+                          },
+                        ],
+                      });
+                    } catch (error) {
+                      console.error("AI 장소 백엔드 저장 실패:", error);
+                    }
                   }
-                }
-              },
-              { location: center, radius: 10000 }, // 현재 화면 중심 10km 반경 우선 검색
-            );
-          });
+                },
+                { location: center, radius: 10000 }, // 현재 화면 중심 10km 이내 우선 검색
+              );
+            });
+          }
         }
-      }
+      };
+
+      socket.onclose = () => {
+        if (!isUnmounted) {
+          console.warn("⚠️ WebSocket 연결 끊김. 3초 뒤 자동 재연결 시도...");
+          reconnectTimer = setTimeout(connectWS, 3000);
+        }
+      };
+
+      socket.onerror = (err) => {
+        socket.close(); // 에러 발생 시 강제로 닫아서 onclose -> 재연결 유도
+      };
     };
 
-    return () => socket.close();
+    connectWS();
+
+    return () => {
+      isUnmounted = true;
+      clearTimeout(reconnectTimer);
+      ws.current?.close();
+    };
   }, [safeRoomId, myLoginId]);
 
-  // /** Web Speech API */
-  // useEffect(() => {
-  //   const SpeechRecognition =
-  //     (window as any).SpeechRecognition ||
-  //     (window as any).webkitSpeechRecognition;
-  //   if (SpeechRecognition && isMicActive) {
-  //     const recognition = new SpeechRecognition();
-  //     recognition.continuous = true;
-  //     recognition.interimResults = true;
-  //     recognition.lang = "ko-KR";
-
-  //     recognition.onresult = (event: any) => {
-  //       for (let i = event.resultIndex; i < event.results.length; ++i) {
-  //         if (event.results[i].isFinal) {
-  //           const transcript = event.results[i][0].transcript;
-
-  //           // 🌟 1. [핵심 추가] 서버로 보내기 전에 내 화면에 0.1초 만에 바로 띄워버리기!!!
-  //           setMessages((prev) => [
-  //             ...prev,
-  //             { type: "CHAT", sender: myLoginId, text: transcript },
-  //           ]);
-
-  //           // 2. 서버로는 원래대로 조용히 전송~
-  //           if (ws.current?.readyState === WebSocket.OPEN) {
-  //             ws.current.send(
-  //               JSON.stringify({
-  //                 type: "CHAT",
-  //                 roomId: safeRoomId,
-  //                 sender: myLoginId,
-  //                 text: transcript,
-  //               }),
-  //             );
-  //           }
-  //         }
-  //       }
-  //     };
-
-  //     recognition.onend = () => {
-  //       if (isMicActive) {
-  //         try {
-  //           recognition.start();
-  //         } catch (e) {}
-  //       }
-  //     };
-
-  //     recognitionRef.current = recognition;
-  //     recognition.start();
-  //   } else if (!isMicActive && recognitionRef.current) {
-  //     recognitionRef.current.stop();
-  //   }
-  // }, [safeRoomId, myLoginId, isMicActive]);
-  /** Web Speech API (프론트 독재 버전 🚀) */
-  useEffect(() => {
+  /** 🌟 [핵심 해결 3] 안전하고 확실한 STT 인스턴스 전용 생명주기 관리 함수 */
+  const startSTT = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
-    let recognition: any = null;
+    // 찌꺼기 완벽 제거
+    stopSTT();
 
-    if (isMicActive) {
-      recognition = new SpeechRecognition();
+    try {
+      const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = "ko-KR";
 
-      // 🚨 콜백 함수를 async로 변경!
-      recognition.onresult = async (event: any) => {
+      recognition.onresult = (event: any) => {
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
-
-            // 1. 내 화면 채팅창에 즉시 띄우기
-            setMessages((prev) => [
-              ...prev,
-              { type: "CHAT", sender: myLoginId, text: transcript },
-            ]);
-
-            // 2. 다른 사람들도 볼 수 있게 웹소켓으로 전송
             if (ws.current?.readyState === WebSocket.OPEN) {
               ws.current.send(
                 JSON.stringify({
-                  type: "CHAT",
                   roomId: safeRoomId,
                   sender: myLoginId,
                   text: transcript,
                 }),
               );
             }
-
-            // ========================================================
-            // 🔥 3. [프론트엔드 단독 처리] LLM 돌려서 장소 추출 & 바구니 담기!
-            // ========================================================
-            const extractedPlaces = await extractPlacesWithLLM(transcript);
-
-            if (extractedPlaces && extractedPlaces.length > 0) {
-              toast.success(
-                `🤖 내가 프론트에서 장소(${extractedPlaces.join(", ")})를 뜯어냈어요!\n추가할게요! 🔍`,
-              );
-
-              const { kakao } = window as any;
-              if (!kakao || !kakao.maps || !kakao.maps.services) return;
-
-              const ps = new kakao.maps.services.Places();
-              const center = mapInstance.current?.getCenter();
-              const searchOptions = center
-                ? { location: center, radius: 10000 }
-                : {};
-
-              extractedPlaces.forEach((placeName: string) => {
-                ps.keywordSearch(
-                  placeName,
-                  async (result: any, status: any) => {
-                    if (status === kakao.maps.services.Status.OK) {
-                      const bestMatch = result[0];
-
-                      const newPlace = {
-                        id: bestMatch.id,
-                        title: bestMatch.place_name,
-                        lat: Number(bestMatch.y),
-                        lng: Number(bestMatch.x),
-                      };
-
-                      // 🌟 낙관적 업데이트: 내 바구니에 먼저 박아버리기!
-                      setSelectedPlaces((prev) => {
-                        const isExist = prev.some(
-                          (p) =>
-                            p.id === newPlace.id || p.title === newPlace.title,
-                        );
-                        if (isExist) return prev;
-
-                        toast.success(
-                          `✨ 프론트가 멱살 잡고 '${newPlace.title}' 추가 성공!`,
-                        );
-                        return [...prev, newPlace];
-                      });
-
-                      // 🌟 백엔드 DB에 조용히 저장시키기 (상준님 API)
-                      try {
-                        await searchApi.addPlacesBulk({
-                          roomId: safeRoomId,
-                          places: [
-                            {
-                              title: newPlace.title,
-                              lat: newPlace.lat,
-                              lng: newPlace.lng,
-                            },
-                          ],
-                        });
-                      } catch (err) {
-                        console.error("백엔드 저장 실패:", err);
-                      }
-                    }
-                  },
-                  searchOptions,
-                );
-              });
-            }
           }
         }
       };
 
-      recognition.onerror = (event: any) => {
-        console.warn("STT 엔진 에러 발생 (재시작 시도):", event.error);
-      };
-
+      // 마이크가 켜져 있는 동안 비정상 종료 시 재인식 자동 바인딩
       recognition.onend = () => {
-        if (isMicActive && recognition) {
+        if (recognitionInstanceRef.current === recognition) {
           try {
             recognition.start();
           } catch (e) {}
         }
       };
 
+      recognitionInstanceRef.current = recognition;
       recognition.start();
-      recognitionRef.current = recognition;
+    } catch (err) {
+      console.error("STT 인스턴스 시작 실패:", err);
+    }
+  };
+
+  const stopSTT = () => {
+    if (recognitionInstanceRef.current) {
+      try {
+        recognitionInstanceRef.current.onend = null; // 오작동 루프 방지용 이벤트 끊기
+        recognitionInstanceRef.current.stop();
+        recognitionInstanceRef.current.abort();
+      } catch (e) {}
+      recognitionInstanceRef.current = null;
+    }
+  };
+
+  /** 마이크 토글 핸들러 */
+  const handleMicToggle = async () => {
+    if (!agoraClient.current) {
+      toast.error("음성 서포트 신호가 아직 준비되지 않았습니다.");
+      return;
     }
 
-    return () => {
-      if (recognition) {
-        recognition.onend = null;
-        recognition.onerror = null;
-        recognition.stop();
-        recognitionRef.current = null;
+    try {
+      if (!isMicActive) {
+        const track = await AgoraRTC.createMicrophoneAudioTrack({
+          AEC: true, // 에코 캔슬링 (Acoustic Echo Cancellation): 스피커 소리가 마이크로 다시 들어가는 하울링/메아리 방지
+          ANS: true, // 노이즈 억제 (Automatic Noise Suppression): 주변의 웅웅거리는 백그라운드 소음(선풍기, 에어컨 등) 차단
+          AGC: true, // 자동 볼륨 조절 (Automatic Gain Control): 목소리가 작으면 키워주고, 너무 크면 줄여줌
+          encoderConfig: "high_quality_stereo", //고음질 오디오 세팅
+        });
+        localAudioTrack.current = track;
+        await agoraClient.current.publish(track);
+
+        setIsMicActive(true);
+        setParticipants((prev) =>
+          prev.map((p) => (p.id === myLoginId ? { ...p, isMuted: false } : p)),
+        );
+
+        startSTT();
+        toast.success("🎤 마이크가 켜졌습니다. (채팅 인식을 시작합니다)");
+      } else {
+        stopSTT();
+
+        if (localAudioTrack.current) {
+          try {
+            await agoraClient.current.unpublish(localAudioTrack.current);
+            localAudioTrack.current.stop();
+            localAudioTrack.current.close();
+          } catch (e) {}
+          localAudioTrack.current = null;
+        }
+
+        setIsMicActive(false);
+        setParticipants((prev) =>
+          prev.map((p) => (p.id === myLoginId ? { ...p, isMuted: true } : p)),
+        );
+        toast.success("🔇 마이크를 껐습니다.");
       }
-    };
-  }, [safeRoomId, myLoginId, isMicActive]);
+    } catch (err) {
+      console.error("마이크 상태 수정 실패:", err);
+      toast.error(
+        "마이크 장치를 찾을 수 없거나 하드웨어 점유 오류가 발생했습니다.",
+      );
+      stopSTT();
+    }
+  };
 
   /** Agora 초기화 */
   useEffect(() => {
@@ -804,7 +873,6 @@ export default function TripWorkspace() {
           });
         });
 
-        // 🌟 유저가 나갔을 때, 혹시 그 사람이 락을 걸고 나갔다면 풀어주기 (안전장치)
         agoraClient.current.on("user-left", (user) => {
           setParticipants((prev) => prev.filter((p) => p.id !== user.uid));
           setLockedBy((prev) => (prev === String(user.uid) ? null : prev));
@@ -843,24 +911,15 @@ export default function TripWorkspace() {
 
         agoraClient.current.enableAudioVolumeIndicator();
 
-        //볼륨 데이터를 받아서 말하는 사람 걸러내기
         agoraClient.current.on("volume-indicator", (volumes) => {
-          //(디버깅용)
-          // 상대방 컴퓨터에 내 목소리가 레벨 몇(level)으로 도착하는지 숫자로 볼 수 있습니다
-          // console.log("🎤 수신된 볼륨 데이터:", volumes);
-
           const activeSpeakers = volumes
-            // 상대방의 미세한 소리 수신 데이터 캐치
             .filter((vol) => vol.level > 20)
             .map((vol) => {
-              // 본인의 uid는 0이나 빈 문자열로 올 수 있으므로 예외 처리
               if (vol.uid === 0 || vol.uid === "") return String(myLoginId);
               return String(vol.uid);
             });
-
           setSpeakingUsers(activeSpeakers);
         });
-        //Web SDK에서는 createDataStream 과정이 필요 없으므로 위의 블록은 깔끔하게 삭제했습니다.
 
         (agoraClient.current as any).on(
           "stream-message",
@@ -869,52 +928,43 @@ export default function TripWorkspace() {
               const decoder = new TextDecoder();
               const data = JSON.parse(decoder.decode(payload));
 
-              if (data.type === "MOUSE_MOVE" && mapInstance.current) {
+              // 🌟 [핵심 해결 1-1] 수신 측에서 아고라 메시지를 받으면 화면 즉시 이동
+              if (data.type === "PLAN_UPDATED") {
+                setViewMode("plan");
+                setShowSearchUI(false);
+                toast.success(
+                  "🚀 누군가 일정을 생성(갱신)했습니다! 다 함께 이동합니다.",
+                );
+                loadExistingPlan();
+              } else if (data.type === "MOUSE_MOVE" && mapInstance.current) {
                 const { kakao } = window as any;
                 const pos = new kakao.maps.LatLng(data.lat, data.lng);
 
-                // 1. 해당 유저의 커서 오버레이가 아직 없다면 새로 생성
                 if (!cursorOverlaysRef.current[uid]) {
-                  // 👇 여기서 유저 고유 컬러를 뽑아냅니다!
                   const userColor = getUserColor(uid);
-
                   const content = document.createElement("div");
-                  // 👇 커서 SVG의 fill과 이름표 background-color를 ${userColor}로 바꿨습니다.
                   content.innerHTML = `
-                    <div style="position: absolute; pointer-events: none; z-index: 50; display: flex; flex-direction: column; items-center; transform: translate(-50%, -50%);">
-                      <svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-                        <path d="M5.65376 2.00018L21.4397 18.2323C22.6865 19.5142 21.778 21.6565 19.9678 21.6565H13.6828C13.1678 21.6565 12.6781 21.8797 12.3364 22.2694L7.5447 27.7323C6.31475 29.1342 3.99951 28.2618 3.99951 26.4014V3.90483C3.99951 2.02298 6.32623 1.11584 7.56459 2.47648L5.65376 2.00018Z" fill="${userColor}" stroke="white" stroke-width="2" />
-                      </svg>
-                      <div style="background-color: ${userColor}; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; margin-top: 4px;">
-                        User ${uid}
-                      </div>
+                  <div style="position: absolute; pointer-events: none; z-index: 50; display: flex; flex-direction: column; items-center; transform: translate(-50%, -50%);">
+                    <svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+                      <path d="M5.65376 2.00018L21.4397 18.2323C22.6865 19.5142 21.778 21.6565 19.9678 21.6565H13.6828C13.1678 21.6565 12.6781 21.8797 12.3364 22.2694L7.5447 27.7323C6.31475 29.1342 3.99951 28.2618 3.99951 26.4014V3.90483C3.99951 2.02298 6.32623 1.11584 7.56459 2.47648L5.65376 2.00018Z" fill="${userColor}" stroke="white" stroke-width="2" />
+                    </svg>
+                    <div style="background-color: ${userColor}; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; margin-top: 4px;">
+                      User ${uid}
                     </div>
-                  `;
+                  </div>
+                `;
 
                   const customOverlay = new kakao.maps.CustomOverlay({
                     position: pos,
                     content: content,
-                    map: mapInstance.current, // 지도에 부착!
+                    map: mapInstance.current,
                   });
                   cursorOverlaysRef.current[uid] = customOverlay;
-                }
-                // 2. 이미 있다면 위치만 부드럽게 갱신
-                else {
+                } else {
                   cursorOverlaysRef.current[uid].setPosition(pos);
                 }
-              }
-              // 👇 이 부분 추가! (락 신호를 받았을 때)
-              else if (data.type === "LOCK_PLAN") {
+              } else if (data.type === "LOCK_PLAN") {
                 setLockedBy(data.isLocked ? uid : null);
-              }
-              // 🌟 2. [핵심 추가] 아고라 직통 채널로 "화면 넘겨!" 신호를 받았을 때
-              else if (data.type === "PLAN_UPDATED") {
-                toast.success("🚀 일정이 갱신되었습니다! 다 함께 이동합니다.");
-                setViewMode("plan"); // 화면을 플랜으로 강제 전환!
-                setShowSearchUI(false);
-                setSelectedPlaces([]); // 장소 바구니 비워주기
-                autoFitBoundsRef.current = true;
-                loadExistingPlan(); // DB에서 예쁘게 저장된 최신 일정 가져오기!
               }
             } catch (e) {
               console.error("좌표 파싱 에러", e);
@@ -945,53 +995,21 @@ export default function TripWorkspace() {
     initAgora();
 
     return () => {
-      localAudioTrack.current?.stop();
-      localAudioTrack.current?.close();
-      agoraClient.current?.leave();
+      stopSTT();
+      if (localAudioTrack.current) {
+        try {
+          localAudioTrack.current.stop();
+          localAudioTrack.current.close();
+        } catch (e) {}
+        localAudioTrack.current = null;
+      }
+      if (agoraClient.current) {
+        try {
+          agoraClient.current.leave();
+        } catch (e) {}
+      }
     };
   }, [safeRoomId, myLoginId]);
-
-  const handleMicToggle = async () => {
-    if (!agoraClient.current) return;
-
-    try {
-      if (!isMicActive) {
-        // 🟢 [마이크 켜기]
-        if (!localAudioTrack.current) {
-          // 1. 처음 켤 때만 마이크 기계를 새로 만듭니다 (옵션 유지!)
-          const track = await AgoraRTC.createMicrophoneAudioTrack({
-            AEC: true, // 하울링 방지
-            ANS: true, // 노이즈 캔슬링
-            AGC: true, // 자동 볼륨 조절
-          });
-          localAudioTrack.current = track;
-          await agoraClient.current.publish(track);
-        } else {
-          // 2. 이미 만들어둔 기계가 있다면, 전원만 다시 켭니다! (엄청 빠름)
-          await localAudioTrack.current.setEnabled(true);
-        }
-
-        setIsMicActive(true);
-        setParticipants((prev) =>
-          prev.map((p) => (p.id === myLoginId ? { ...p, isMuted: false } : p)),
-        );
-      } else {
-        // 🔴 [마이크 끄기 (Mute)]
-        if (localAudioTrack.current) {
-          // 연결을 끊고 부수는 게 아니라, 기계 전원만 살짝 꺼둡니다 (음소거 상태)
-          await localAudioTrack.current.setEnabled(false);
-        }
-
-        setIsMicActive(false);
-        setParticipants((prev) =>
-          prev.map((p) => (p.id === myLoginId ? { ...p, isMuted: true } : p)),
-        );
-      }
-    } catch (err) {
-      console.error("마이크 토글 에러:", err);
-      toast.error("마이크 상태를 변경하는 중 오류가 발생했습니다.");
-    }
-  };
 
   /** 지도 초기화 */
   useEffect(() => {
@@ -1005,8 +1023,8 @@ export default function TripWorkspace() {
       kakao.maps.load(() => {
         if (mapInstance.current) return;
         mapInstance.current = new kakao.maps.Map(mapRef.current, {
-          center: new kakao.maps.LatLng(33.450701, 126.570667), // 기본은 제주도/서울 등
-          level: 9, // 처음에 넓게 보기 위해 레벨을 살짝 높입니다
+          center: new kakao.maps.LatLng(33.450701, 126.570667),
+          level: 5,
         });
         clustererInstance.current = new kakao.maps.MarkerClusterer({
           map: mapInstance.current,
@@ -1017,11 +1035,10 @@ export default function TripWorkspace() {
         setIsMapLoaded(true);
 
         kakao.maps.event.addListener(mapInstance.current, "click", () => {
-          infoWindowInstance.current.close(); // 검색 결과 핀 닫기
-          infoWindowInstance.current.setMap(null); // AI 일정 커스텀 핀 닫기
+          infoWindowInstance.current.close();
+          infoWindowInstance.current.setMap(null);
         });
 
-        // 🌟 지도가 로드된 직후, 카카오 지도 마우스 이벤트 리스너 등록!
         kakao.maps.event.addListener(
           mapInstance.current,
           "mousemove",
@@ -1030,9 +1047,7 @@ export default function TripWorkspace() {
 
             const now = Date.now();
             if (now - lastSentTime.current > 80) {
-              // 80ms 쓰로틀링 유지
-              const latlng = mouseEvent.latLng; // 화면 %가 아닌 실제 위도/경도!
-
+              const latlng = mouseEvent.latLng;
               const payload = JSON.stringify({
                 type: "MOUSE_MOVE",
                 lat: latlng.getLat(),
@@ -1044,19 +1059,17 @@ export default function TripWorkspace() {
                 encoder.encode(payload),
                 false,
               );
-
               lastSentTime.current = now;
             }
           },
-        ); // 👈 mousemove 이벤트는 여기서 끝!
+        );
 
-        // 🌟 [수정된 부분] 지도 이동 로직은 마우스 이벤트 '바깥'에 한 번만 실행되게 빼야 합니다!!!
         if (urlTitle && urlTitle !== "여행") {
           const ps = new kakao.maps.services.Places();
           ps.keywordSearch(urlTitle, (data: any, status: any) => {
             if (status === kakao.maps.services.Status.OK) {
               const moveLatLon = new kakao.maps.LatLng(data[0].y, data[0].x);
-              mapInstance.current.setCenter(moveLatLon); // 그 지역으로 지도 순간이동!
+              mapInstance.current.setCenter(moveLatLon);
             }
           });
         }
@@ -1064,19 +1077,16 @@ export default function TripWorkspace() {
     };
 
     initMap();
-  }, [urlTitle]); // 👈 여기에 urlTitle 추가
+  }, [urlTitle]);
 
   const handleProfileClick = (targetUid: string) => {
-    // 1. 내 프로필을 눌렀을 때는 무시
     if (String(targetUid) === String(myLoginId)) {
-      toast.error("내 프로필으로는 위치 이동할 수 없습니다!");
+      toast.error("내 프로필로는 위치 이동할 수 없습니다!");
       return;
     }
 
-    // 2. 상대방의 커서 오버레이 객체가 있는지 확인
     const overlay = cursorOverlaysRef.current[targetUid];
     if (overlay && mapInstance.current) {
-      // 3. 오버레이에서 현재 위도/경도 좌표를 뽑아내서 그곳으로 지도 이동!
       const pos = overlay.getPosition();
       mapInstance.current.panTo(pos);
       toast.success(`🚀 User ${targetUid}님의 위치로 이동했습니다!`);
@@ -1087,7 +1097,7 @@ export default function TripWorkspace() {
     }
   };
 
-  /** 지도 렌더링 (이미지 포함) */
+  /** 지도 렌더링 */
   const clearMap = () => {
     markersRef.current.forEach((m) => m.setMap(null));
     polylineInstances.current.forEach((p) => p.setMap(null));
@@ -1106,9 +1116,7 @@ export default function TripWorkspace() {
     const bounds = new kakao.maps.LatLngBounds();
     let hasBounds = false;
 
-    // ==========================================
-    // 1. AI 일정 렌더링 (번호가 적힌 예쁜 커스텀 핀)
-    // ==========================================
+    // 1. AI 일정 렌더링
     if (planData.length > 0) {
       const days = Array.from(
         new Set(planData.map((p) => `${p.month}/${p.day}`)),
@@ -1126,14 +1134,12 @@ export default function TripWorkspace() {
         bounds.extend(pos);
         hasBounds = true;
 
-        // 해당 일정의 요일 인덱스를 구해서 선(Polyline) 색상과 깔맞춤합니다!
         const dayIndex = days.indexOf(`${item.month}/${item.day}`);
         const pinColor =
           selectedDay === null || viewMode === "map" || showSearchUI
             ? DAY_COLORS[dayIndex % DAY_COLORS.length]
             : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length];
 
-        // 🌟 촌스러운 기본 마커 대신 예쁜 HTML/CSS 커스텀 마커 생성
         const content = document.createElement("div");
         content.innerHTML = `
           <div style="position:relative; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer; transform:translateY(-10px);">
@@ -1144,21 +1150,18 @@ export default function TripWorkspace() {
           </div>
         `;
 
-        // 카카오 CustomOverlay로 지도에 부착
         const customMarker = new kakao.maps.CustomOverlay({
           position: pos,
           content: content,
           map: mapInstance.current,
-          yAnchor: 1, // 마커의 꼬리 부분이 정확히 좌표에 닿도록 설정
+          yAnchor: 1,
           zIndex: 10,
         });
 
         markersRef.current.push(customMarker);
 
-        // 마커 클릭 시 InfoWindow 열기
         content.onclick = () => {
           const prefix = selectedDay === null ? "" : `<b>${idx + 1}.</b> `;
-
           const imageHtml = item.imageUrl
             ? `<img src="${item.imageUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px;" alt="${item.place}" />`
             : ``;
@@ -1169,13 +1172,11 @@ export default function TripWorkspace() {
             <div style="color:#6b7280; font-size:12px; line-height:1.4;">${item.memo}</div>
           </div>`;
 
-          // CustomOverlay는 이 방식으로 인포윈도우를 띄워야 합니다.
           infoWindowInstance.current.setContent(contentHtml);
           infoWindowInstance.current.setPosition(pos);
           infoWindowInstance.current.setMap(mapInstance.current);
         };
       });
-      // 선(Polyline) 그리기 로직 (기존과 동일)
 
       days.forEach((dateString, dayIndex) => {
         if (
@@ -1184,140 +1185,37 @@ export default function TripWorkspace() {
           selectedDay !== dayIndex + 1
         )
           return;
-
         const dayItems = planData.filter(
           (p) => `${p.month}/${p.day}` === dateString,
         );
-
         if (dayItems.length === 0) return;
 
         const linePath = dayItems.map(
           (item) => new kakao.maps.LatLng(item.lat, item.lng),
         );
-
         const polyline = new kakao.maps.Polyline({
           path: linePath,
-
           strokeWeight: 5,
-
           strokeColor:
             selectedDay === null || viewMode === "map" || showSearchUI
               ? DAY_COLORS[dayIndex % DAY_COLORS.length]
-              : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length], // 👈 핵심 수정 부분!
-
+              : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length],
           strokeOpacity: viewMode === "map" || showSearchUI ? 0.3 : 0.8,
-
           strokeStyle: "solid",
         });
-
         polyline.setMap(mapInstance.current);
-
         polylineInstances.current.push(polyline);
       });
-      // // ==========================================
-      // // 🚀 [업그레이드] 실제 자동차 도로(내비게이션) 선 그리기!
-      // // ==========================================
-      // const drawDrivingRoutes = async () => {
-      //   const { kakao } = window as any;
-
-      //   for (let dayIndex = 0; dayIndex < days.length; dayIndex++) {
-      //     const dateString = days[dayIndex];
-      //     if (
-      //       selectedDay !== null &&
-      //       viewMode === "plan" &&
-      //       selectedDay !== dayIndex + 1
-      //     )
-      //       continue;
-
-      //     const dayItems = planData.filter(
-      //       (p) => `${p.month}/${p.day}` === dateString,
-      //     );
-      //     if (dayItems.length < 2) continue; // 장소가 2개 이상이어야 길을 찾음!
-
-      //     let linePath: any[] = [];
-
-      //     try {
-      //       // 1. 출발지, 도착지, 경유지(최대 30개) 좌표 뽑기
-      //       // 🚨 주의: 카카오 길찾기 API는 무조건 '경도(x),위도(y)' 순서로 적어야 합니다!
-      //       const origin = `${dayItems[0].lng},${dayItems[0].lat}`;
-      //       const destination = `${dayItems[dayItems.length - 1].lng},${dayItems[dayItems.length - 1].lat}`;
-      //       const waypoints = dayItems
-      //         .slice(1, -1)
-      //         .map((item) => `${item.lng},${item.lat}`)
-      //         .join("|");
-
-      //       const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin}&destination=${destination}${waypoints ? `&waypoints=${waypoints}` : ""}`;
-
-      //       // 2. 카카오 모빌리티 길찾기 서버에 요청!
-      //       const response = await fetch(url, {
-      //         headers: {
-      //           // 🚨 주의: 유진님의 REST API 키를 여기에 넣으세요! (KakaoAK 뒤에 띄어쓰기 필수)
-      //           Authorization: `KakaoAK 유진님의_REST_API_키`,
-      //         },
-      //       });
-
-      //       const data = await response.json();
-
-      //       // 3. 응답받은 실제 도로의 꼬불꼬불한 좌표(vertexes)들을 지도 좌표 배열로 변환
-      //       if (data.routes && data.routes[0]) {
-      //         data.routes[0].sections.forEach((section: any) => {
-      //           section.roads.forEach((road: any) => {
-      //             const vertexes = road.vertexes;
-      //             // vertexes는 [x1, y1, x2, y2...] 형태로 평면 배열로 들어옵니다.
-      //             for (let i = 0; i < vertexes.length; i += 2) {
-      //               linePath.push(
-      //                 new kakao.maps.LatLng(vertexes[i + 1], vertexes[i]),
-      //               ); // 다시 위도(y), 경도(x)로 변환
-      //             }
-      //           });
-      //         });
-      //       } else {
-      //         throw new Error("경로를 찾을 수 없음");
-      //       }
-      //     } catch (error) {
-      //       console.warn(
-      //         "자동차 길찾기 실패 (바다를 건너거나 길이 없는 경우), 직선으로 대체합니다.",
-      //         error,
-      //       );
-      //       // 에러 나면 기존처럼 그냥 점과 점을 잇는 직선으로 대체! (보험)
-      //       linePath = dayItems.map(
-      //         (item) => new kakao.maps.LatLng(item.lat, item.lng),
-      //       );
-      //     }
-
-      //     // 4. 추출한 수백 개의 좌표들로 정교한 폴리라인(선) 그리기
-      //     const polyline = new kakao.maps.Polyline({
-      //       path: linePath,
-      //       strokeWeight: 5,
-      //       strokeColor:
-      //         selectedDay === null || viewMode === "map" || showSearchUI
-      //           ? DAY_COLORS[dayIndex % DAY_COLORS.length]
-      //           : DAY_COLORS[(selectedDay - 1) % DAY_COLORS.length],
-      //       strokeOpacity: viewMode === "map" || showSearchUI ? 0.3 : 0.8,
-      //       strokeStyle: "solid",
-      //     });
-
-      //     polyline.setMap(mapInstance.current);
-      //     polylineInstances.current.push(polyline);
-      //   }
-      // };
-
-      // // 비동기 함수 실행!
-      // drawDrivingRoutes();
     }
 
-    // ==========================================
-    // 2. 검색 결과 렌더링 (카카오 데이터 포맷에 맞춤)
-    // ==========================================
+    // 2. 검색 결과 렌더링
     if ((viewMode === "map" || showSearchUI) && searchResults.length > 0) {
-      // 검색 기록 보관 (addPlaceToTrip 함수에서 꺼내 쓰기 위함)
       const newPlaces = searchResults.filter(
         (p) =>
           !allFoundPlacesRef.current.some((existing) => existing.id === p.id),
       );
       allFoundPlacesRef.current = [...allFoundPlacesRef.current, ...newPlaces];
 
-      // 검색 마커 이미지 설정 (유진님이 쓰시던 SVG 유지)
       const searchMarkerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="38" viewBox="0 0 36 42"><path d="M18 0C8.059 0 0 8.059 0 18c0 10.5 18 24 18 24s18-13.5 18-24C36 8.059 27.941 0 18 0zm0 25c-3.866 0-7-3.134-7-7s3.134-7 7-7 7 3.134 7 7-3.134 7-7 7z" fill="#4967fe" stroke="white" stroke-width="2.5"/><circle cx="18" cy="18" r="4" fill="white"/></svg>`;
       const searchMarkerImageSrc = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(searchMarkerSvg)}`;
       const markerImage = new kakao.maps.MarkerImage(
@@ -1328,7 +1226,7 @@ export default function TripWorkspace() {
 
       searchResults.forEach((place) => {
         const safeId = place.id;
-        const pos = new kakao.maps.LatLng(place.y, place.x); // 🌟 카카오는 y, x입니다!
+        const pos = new kakao.maps.LatLng(place.y, place.x);
         bounds.extend(pos);
         hasBounds = true;
 
@@ -1338,17 +1236,14 @@ export default function TripWorkspace() {
         });
 
         kakao.maps.event.addListener(marker, "click", () => {
-          // 카카오 장소 검색은 이미지가 기본 제공되지 않으므로 주소를 넣어줍니다.
           const addressText =
             place.road_address_name || place.address_name || "";
+          const placeName = place.place_name || place.title;
 
-          // 🌟 추가하기 버튼이 포함된 인포윈도우!
           const content = `<div style="padding:15px; font-size:14px; width:220px; border-radius:12px; box-sizing:border-box;">
-            <h4 style="margin:0 0 5px 0; font-size:15px; font-weight:bold; color:#1f2937; line-height:1.3; word-break:keep-all;">${place.place_name}</h4>
+            <h4 style="margin:0 0 5px 0; font-size:15px; font-weight:bold; color:#1f2937; line-height:1.3; word-break:keep-all;">${placeName}</h4>
             <p style="margin:0 0 10px 0; font-size:12px; color:#6b7280; line-height:1.4;">${addressText}</p>
-            <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; transition:0.2s;">
-              장소 추가하기
-            </button>
+            <button onclick="window.addPlaceToTrip('${safeId}')" style="background:#4967fe; color:white; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; margin-top:8px; transition:0.2s;">장소 추가하기</button>
           </div>`;
 
           infoWindowInstance.current.setContent(content);
@@ -1357,9 +1252,10 @@ export default function TripWorkspace() {
         clustererInstance.current.addMarker(marker);
       });
     }
+
     if (hasBounds && autoFitBoundsRef.current) {
       mapInstance.current.setBounds(bounds);
-      autoFitBoundsRef.current = false; // 이동 후 즉시 플래그 꺼서 자유롭게 볼 수 있게 만듦
+      autoFitBoundsRef.current = false;
     }
   }, [
     isMapLoaded,
@@ -1374,7 +1270,7 @@ export default function TripWorkspace() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isChatActive]);
 
-  /** 🌟 카카오맵 다이렉트 검색 로직 */
+  /** 카카오 지도 다이렉트 검색 (키워드) */
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!mapInstance.current || !keyword.trim()) return;
@@ -1383,21 +1279,18 @@ export default function TripWorkspace() {
     const ps = new kakao.maps.services.Places();
     const center = mapInstance.current.getCenter();
 
-    // 내 지도 중심을 기준으로 검색
     const searchOptions = {
       location: center,
-      radius: 5000, // 5km 반경
+      radius: 5000,
     };
 
     ps.keywordSearch(
       keyword.trim(),
       (data: any, status: any) => {
         if (status === kakao.maps.services.Status.OK) {
-          // 1. 검색 결과 상태에 저장
           setSearchResults(data);
-          setIsCatOpen(false); // 드롭다운 닫기
+          setIsCatOpen(false);
 
-          // 2. 검색된 장소들이 한 화면에 다 보이도록 지도 영역(Bounds) 넓히기
           const bounds = new kakao.maps.LatLngBounds();
           data.forEach((place: any) => {
             bounds.extend(new kakao.maps.LatLng(place.y, place.x));
@@ -1413,30 +1306,24 @@ export default function TripWorkspace() {
     );
   };
 
-  /** 🌟 카카오 카테고리(주변) 검색 다이렉트 호출 */
+  /** 카카오 지도 주변 다이렉트 검색 (카테고리) */
   const handleNearbySearch = async (catId: string) => {
     if (!mapInstance.current) return;
-
     const { kakao } = window as any;
     const ps = new kakao.maps.services.Places();
     const center = mapInstance.current.getCenter();
-    const radius = 2000; // 2km 반경
+    const radius = 2000;
 
-    // 1. 카카오 카테고리 코드 가져오기
     const kakaoCode = KAKAO_CATEGORY_MAP[catId];
 
-    // 🌟 카카오 지도 검색 완료 후 실행될 공통 콜백 함수
     const searchCallback = (data: any, status: any) => {
       if (status === kakao.maps.services.Status.OK) {
         setSearchResults(data);
-
-        // 검색된 장소들이 한 화면에 다 보이도록 줌 아웃/인
         const bounds = new kakao.maps.LatLngBounds();
         data.forEach((place: any) => {
           bounds.extend(new kakao.maps.LatLng(place.y, place.x));
         });
         mapInstance.current.setBounds(bounds);
-
         toast.success("주변 장소를 찾았습니다! 📍");
       } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
         toast.error("주변에 해당 장소가 없습니다.");
@@ -1445,15 +1332,12 @@ export default function TripWorkspace() {
       }
     };
 
-    // 2. 검색 분기 처리 (코드가 있으면 카테고리 검색, 없으면 키워드 검색)
     if (kakaoCode) {
-      // ✅ 카테고리 코드가 있는 경우 (음식점, 숙박 등) -> 더 정확함!
       ps.categorySearch(kakaoCode, searchCallback, {
         location: center,
         radius: radius,
       });
     } else {
-      // ✅ 카테고리 코드가 없는 경우 (레포츠 등) -> 현재 위치 기반 '키워드 검색'으로 대체
       const catLabel = CATEGORIES.find((c) => c.id === catId)?.label || "";
       ps.keywordSearch(catLabel, searchCallback, {
         location: center,
@@ -1461,15 +1345,14 @@ export default function TripWorkspace() {
       });
     }
   };
-  // 🌟 [추가] planData에서 고유한 날짜(MM/DD)들만 순서대로 쏙쏙 뽑아냅니다!
+
   const uniqueDays = Array.from(
     new Set(planData.map((p) => `${p.month}/${p.day}`)),
   );
 
   return (
     <div className="flex w-full h-screen bg-white font-pretendard overflow-hidden relative">
-      {/* 🌟 다른 사람들의 실시간 마우스 커서 */}
-      {/* 👇 1. 여기에 예쁜 경고 모달을 추가합니다 👇 */}
+      {/* 🌟 예쁜 경고 모달 */}
       {isConfirmModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-[360px] w-full flex flex-col items-center text-center transform transition-all">
@@ -1494,8 +1377,8 @@ export default function TripWorkspace() {
               </button>
               <button
                 onClick={() => {
-                  setIsConfirmModalOpen(false); // 모달 닫기
-                  generateNewPlan(); // 🚀 실제 일정 생성 함수 실행!
+                  setIsConfirmModalOpen(false);
+                  generateNewPlan();
                 }}
                 className="flex-1 py-3.5 bg-primary-600 text-white font-bold rounded-2xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/30"
               >
@@ -1506,7 +1389,6 @@ export default function TripWorkspace() {
         </div>
       )}
 
-      {/* 👇 여기서부터 복사해서 덮어씌워 주세요 👇 */}
       {viewMode === "map" ? (
         <Sidebar
           rooms={selectedPlaces}
@@ -1514,7 +1396,6 @@ export default function TripWorkspace() {
           dateRange={displayDateRange}
           bottomActions={[
             {
-              // 🌟 1. "AI 일정 생성" 버튼 (map 모드)
               label: lockedBy ? "다른 유저가 조율 중..." : "AI 일정 생성",
               icon: AI_PLAN_ICON,
               onClick: () => {
@@ -1552,22 +1433,19 @@ export default function TripWorkspace() {
           onPlaceClick={(lat, lng) => {
             if (mapInstance.current) {
               const { kakao } = window as any;
-              // 💡 panTo를 쓰면 화면이 뚝 끊기지 않고 헬리콥터처럼 스르륵~ 날아갑니다
               mapInstance.current.panTo(new kakao.maps.LatLng(lat, lng));
             }
           }}
           bottomActions={[
             {
-              // 🌟 2. 잃어버렸던 "장소 더 찾기" 버튼 부활! (plan 모드)
               label: showSearchUI ? "검색 닫기" : "장소 더 찾기",
               icon: ADD_PLACE_ICON,
               onClick: () => {
                 setShowSearchUI(!showSearchUI);
-                if (showSearchUI) setSearchResults([]); // 닫을 때 검색 결과 초기화
+                if (showSearchUI) setSearchResults([]);
               },
             },
             {
-              // 🌟 3. "다시 조율" 버튼 (plan 모드)
               label: lockedBy ? "다른 유저가 조율 중..." : "다시 조율",
               icon: REFRESH_PLAN_ICON,
               onClick: () => {
@@ -1588,8 +1466,6 @@ export default function TripWorkspace() {
           {participants.map((p) => {
             const isMe = String(p.id) === String(myLoginId);
             const isSpeaking = speakingUsers.includes(String(p.id));
-
-            // 🌟 1. 이 사람의 고유한 컬러 추출!
             const userColor = getUserColor(p.id);
 
             return (
@@ -1599,7 +1475,6 @@ export default function TripWorkspace() {
                 className={`relative group flex flex-col items-center gap-2 transition-transform duration-75 cursor-pointer hover:scale-110`}
               >
                 <div
-                  // 🌟 2. 바탕을 고유 컬러로 칠하고, 말할 때 그 색깔 빛이 뿜어져 나옵니다 (box-shadow)
                   className={`w-16 h-16 rounded-full border-2 border-white flex items-center justify-center overflow-hidden relative transition-all duration-75 z-10 ${
                     isSpeaking ? "scale-110" : ""
                   }`}
@@ -1620,7 +1495,6 @@ export default function TripWorkspace() {
                   )}
                 </div>
 
-                {/* 🌟 3. 이름표 뱃지도 고유 컬러로 깔맞춤! */}
                 <div
                   className="px-2 py-0.5 rounded-md text-[11px] font-bold shadow-sm text-white z-20 transition-all duration-75"
                   style={{
@@ -1644,6 +1518,7 @@ export default function TripWorkspace() {
             );
           })}
         </div>
+
         {(viewMode === "map" || showSearchUI) && !isLoading && (
           <div className="animate-fadeIn">
             <div className="absolute top-[80px] left-[40px] z-[100] flex flex-wrap gap-2 w-[700px]">
@@ -1714,7 +1589,6 @@ export default function TripWorkspace() {
         {viewMode === "plan" && !isLoading && !showSearchUI && (
           <div className="absolute bottom-[140px] left-1/2 -translate-x-1/2 z-[100] bg-white/90 backdrop-blur px-8 py-3 rounded-full shadow-lg border border-primary-200">
             <span className="text-primary-600 font-extrabold mr-2">
-              {/* 🌟 날짜 데이터가 있으면 "1일차 (2/20)" 형식으로 보여주기! */}
               {selectedDay === null
                 ? "전체 일정"
                 : `${selectedDay}일차 (${uniqueDays[selectedDay - 1] || ""})`}

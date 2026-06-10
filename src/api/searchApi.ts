@@ -7,7 +7,7 @@ import type {
   NearbyPlace,
 } from "../types/api";
 
-// 🌟 백엔드 명세서에 맞춘 Bulk POST용 타입 추가
+//백엔드 명세서에 맞춘 Bulk POST용 타입 추가
 export interface BulkPlaceRequest {
   roomId: string;
   places: {
@@ -28,7 +28,7 @@ export const searchApi = {
     return client.get<NearbyPlace[]>("/api/places/nearby", { params });
   },
 
-  // 👇 🌟 여기에 카카오에서 찾은 장소를 백엔드로 보내는 함수 추가!
+  //백엔드 명세서에 맞춘 Bulk POST 메서드 추가
   addPlacesBulk: (data: BulkPlaceRequest) => {
     if (IS_MOCK) {
       console.log("🚀 [Mock Mode] 장소 추가 Payload:", data);

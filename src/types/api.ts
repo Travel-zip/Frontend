@@ -67,3 +67,15 @@ export type NearbyPlace = {
   category: string;
   contentId: string;
 };
+
+export type KakaoPlace = {
+  id: string;
+  place_name: string;
+  category_name: string;
+  address_name: string;
+  road_address_name: string;
+  x: string; // 경도(longitude) — string
+  y: string; // 위도(latitude)  — string
+  place_url: string;
+  distance: string;
+};
